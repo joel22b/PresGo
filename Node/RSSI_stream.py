@@ -5,6 +5,7 @@ import random
 import serial
 import time
 import math
+import numpy as np
 
 class KalmanFilter:
 
@@ -72,6 +73,8 @@ def calc_dist(rss,a,n):
     cal_d= pow(10,((a-rss)/(10*n)))
     return cal_d
 
+
+
 # All units in meters
 nodeA_x = 0
 nodeA_y = 0
@@ -82,7 +85,9 @@ nodeC_y = 1
 x = 0.5
 y = 0.5
 
-rssi_arr = [-50, -50, -50]
+rssi_arr = [[],[],[]]
+distances = [[],[],[]]
+filters = [KalmanFilter(1,1), KalmanFilter(1,1), KalmanFilter(1,1)]
 means = [0.5, 0.5, 0.5]
 
 fig2, ax = plot.subplots()
@@ -90,7 +95,7 @@ circles = [plot.Circle((0,0), 0, fill=False) for _ in range(3)]
 
 # Setup serial port
 baudrate = 115200
-ports = ['COM5']#, 'COM7', 'COM8']  # set the correct port before run it
+ports = ['COM4', 'COM5', 'COM6']#, 'COM7', 'COM8']  # set the correct port before run it
 
 serials = []
 for p in ports:
@@ -106,7 +111,7 @@ def init():  # Initialization function
         ax.add_patch(circle)
     return circles
 
-def update(i):  # Update function
+def update(frame):  # Update function
     for i, serial in enumerate(serials):
         if serial.is_open:
             while True:
@@ -120,13 +125,25 @@ def update(i):  # Update function
                     #print(data)
                     if data_str.startswith("-"):
                         rssi = int(data_str)
+                        rssi_arr[i].append(rssi) 
+                        if(len(rssi_arr[i])>=2):
+                            var = np.nanvar(rssi_arr[i])
+                            filters[i].set_measurement_noise(var)
+                            filtered_rssi = filters[i].filter(rssi)
 
-                        #means[i] = calc_dist(rssi, -53.42, 1.6)
+                            distances[i].append(calc_dist(filtered_rssi, -53.42, 1.6))
+                            means[i] = np.nanmean(distances[i])
+
+
+                        
+                        
+                        
+
                         break
                 else:
                     time.sleep(1)
-    else:
-        print(ports[i] + ' not open')
+    #else:
+        #print(ports[i] + ' not open')
 
     ax.clear()
     ax.scatter([nodeA_x], [nodeA_y], color="green")
