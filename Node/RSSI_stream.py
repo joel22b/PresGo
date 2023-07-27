@@ -76,12 +76,12 @@ def calc_dist(rss,a,n):
 
 
 # All units in meters
-nodeA_x = 0.8
-nodeA_y = 0
+nodeA_x = 0
+nodeA_y = 1.14 #2.14
 nodeB_x = 0
 nodeB_y = 0
-nodeC_x = 0
-nodeC_y = 0.5
+nodeC_x = 0.5
+nodeC_y = 0.7
 calc_x = 0.5
 calc_y = 0.5
 
@@ -161,7 +161,7 @@ def update(frame):  # Update function
     ax.scatter([nodeB_x], [nodeB_y], color="blue")
     ax.scatter([nodeC_x], [nodeC_y], color="red")
     
-    ax.scatter([calc_x], [calc_y], color="yellow")
+    ax.scatter([calc_x], [calc_y], color="purple")
     
     circles[0].center = (nodeA_x, nodeA_y)
     circles[0].radius = means[0]
