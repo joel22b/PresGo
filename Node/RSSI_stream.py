@@ -69,6 +69,25 @@ class KalmanFilter:
         :param noise: The new process noise
         """
         self.R = noise
+
+
+def is_point_inside_circle(center_x, center_y, radius, point_x, point_y):
+    """
+    Determine whether a point is inside a circle.
+
+    Parameters:
+        center_x (float): X-coordinate of the center of the circle.
+        center_y (float): Y-coordinate of the center of the circle.
+        radius (float): Radius of the circle.
+        point_x (float): X-coordinate of the point to check.
+        point_y (float): Y-coordinate of the point to check.
+
+    Returns:
+        bool: True if the point is inside the circle, False otherwise.
+    """
+    distance = math.sqrt((point_x - center_x) ** 2 + (point_y - center_y) ** 2)
+    return distance < radius
+
 def wcl(weight,x,y):
     xiwi=np.multiply(x,weight)
     yiwi=np.multiply(y,weight)
@@ -179,14 +198,19 @@ def update(frame):  # Update function
     ax.scatter([nodeC_x], [nodeC_y], color="red")
 
     weights = [1/means[0], 1/means[1], 1/means[2]]
+    
     centroid_x, centroid_y = wcl(weights, [nodeA_x, nodeB_x, nodeC_x],[nodeA_y, nodeB_y,nodeC_y])
+    
+    ax.annotate("A", (centroid_x,centroid_y) )
+    ax.annotate("B", (target_x, target_y) )
     ax.scatter([centroid_x], [centroid_y], color="purple")
     ax.scatter([target_x], [target_y], color="orange")
 
     #global target_x
     #global target_y
-    
-    
+
+       
+
     circles[0].center = (nodeA_x, nodeA_y)
     circles[0].radius = means[0]
     circles[1].center = (nodeB_x, nodeB_y)
@@ -194,8 +218,18 @@ def update(frame):  # Update function
     circles[2].center = (nodeC_x, nodeC_y)
     circles[2].radius = means[2]
     
+    
+    boundary = plot.Circle((nodeA_x,nodeA_y), radius=0.75, edgecolor="green",  fill=False)
+
+    if(is_point_inside_circle(nodeA_x,nodeA_y,0.75,centroid_x,centroid_x)):
+        ax.set_title("IN RANGE")
+    else:
+        ax.set_title("OUT OF RANGE")
+        
     for circle in circles:
         ax.add_patch(circle)
+
+    ax.add_patch(boundary)
     
     return circles
 
