@@ -76,14 +76,15 @@ def calc_dist(rss,a,n):
 
 
 # All units in meters
-nodeA_x = 0
+nodeA_x = 0.8
 nodeA_y = 0
-nodeB_x = 1
+nodeB_x = 0
 nodeB_y = 0
-nodeC_x = 1
-nodeC_y = 1
-x = 0.5
-y = 0.5
+nodeC_x = 0
+nodeC_y = 0.5
+calc_x = 0.5
+calc_y = 0.5
+
 
 rssi_arr = [[],[],[]]
 distances = [[],[],[]]
@@ -103,6 +104,17 @@ for p in ports:
     ser.timeout = 2  # set read timeout
     print(p + " is open: " + str(ser.is_open))  # True for opened
     serials.append(ser)
+
+def trilateration(x1,y1,r1,x2,y2,r2,x3,y3,r3):
+  A = 2*x2 - 2*x1
+  B = 2*y2 - 2*y1
+  C = r1**2 - r2**2 - x1**2 + x2**2 - y1**2 + y2**2
+  D = 2*x3 - 2*x2
+  E = 2*y3 - 2*y2
+  F = r2**2 - r3**2 - x2**2 + x3**2 - y2**2 + y3**2
+  x = (C*E - F*B) / (E*A - B*D)
+  y = (C*D - A*F) / (B*D - A*E)
+  return x,y
 
 def init():  # Initialization function
     for circle in circles:
@@ -133,23 +145,23 @@ def update(frame):  # Update function
 
                             distances[i].append(calc_dist(filtered_rssi, -53.42, 1.6))
                             means[i] = np.nanmean(distances[i])
-
-
+                            global calc_x
+                            global calc_y
+                            calc_x,calc_y = trilateration(nodeA_x,nodeA_y,means[0], nodeB_x, nodeB_y, means[1], nodeC_x, nodeC_y, means[2])
                         
-                        
-                        
-
+                        #serial.read(max(0, size - len(data)))
                         break
                 else:
                     time.sleep(1)
     #else:
         #print(ports[i] + ' not open')
-
+    
     ax.clear()
     ax.scatter([nodeA_x], [nodeA_y], color="green")
     ax.scatter([nodeB_x], [nodeB_y], color="blue")
     ax.scatter([nodeC_x], [nodeC_y], color="red")
-    ax.scatter([x], [y], color="yellow")
+    
+    ax.scatter([calc_x], [calc_y], color="yellow")
     
     circles[0].center = (nodeA_x, nodeA_y)
     circles[0].radius = means[0]
