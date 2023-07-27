@@ -69,7 +69,12 @@ class KalmanFilter:
         :param noise: The new process noise
         """
         self.R = noise
-
+def wcl(weight,x,y):
+    xiwi=np.multiply(x,weight)
+    yiwi=np.multiply(y,weight)
+    xw=np.sum(xiwi)/np.sum(weight)
+    yw=np.sum(yiwi)/np.sum(weight)
+    return xw,yw
 def calc_dist(rss,a,n):
     cal_d= pow(10,((a-rss)/(10*n)))
     return cal_d
@@ -86,12 +91,12 @@ def trilateration(x1,y1,r1,x2,y2,r2,x3,y3,r3):
   return x,y
 
 # All units in meters
-nodeA_x = 0
-nodeA_y = 0
-nodeB_x = 0.63
-nodeB_y = 0.85
+nodeA_x = 1.88
+nodeA_y = 1.14 #2.14
+nodeB_x = 0
+nodeB_y = 1.86
 nodeC_x = 0
-nodeC_y = 2.27
+nodeC_y = 0
 target_x = 0.5
 target_y = 0.5
 
@@ -146,7 +151,7 @@ def thread_serial(index):
 
 # Setup serial port
 baudrate = 115200
-ports = ['COM5', 'COM6', 'COM8']#, 'COM7', 'COM8']  # set the correct port before run it
+ports = ['COM4', 'COM5', 'COM6']#, 'COM7', 'COM8']  # set the correct port before run it
 
 # Start serial threads
 threads = []
@@ -172,7 +177,11 @@ def update(frame):  # Update function
     ax.scatter([nodeA_x], [nodeA_y], color="green")
     ax.scatter([nodeB_x], [nodeB_y], color="blue")
     ax.scatter([nodeC_x], [nodeC_y], color="red")
-    ax.scatter([target_x], [target_y], color="purple")
+
+    weights = [1/means[0], 1/means[1], 1/means[2]]
+    centroid_x, centroid_y = wcl(weights, [nodeA_x, nodeB_x, nodeC_x],[nodeA_y, nodeB_y,nodeC_y])
+    ax.scatter([centroid_x], [centroid_y], color="purple")
+    ax.scatter([target_x], [target_y], color="orange")
 
     #global target_x
     #global target_y
