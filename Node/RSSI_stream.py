@@ -76,18 +76,19 @@ def calc_dist(rss,a,n):
 
 
 # All units in meters
-nodeA_x = 0
+nodeA_x = 1.88
 nodeA_y = 1.14 #2.14
 nodeB_x = 0
-nodeB_y = 0
-nodeC_x = 0.5
-nodeC_y = 0.7
+nodeB_y = 1.86
+nodeC_x = 0
+nodeC_y = 0
 calc_x = 0.5
 calc_y = 0.5
 
 
 rssi_arr = [[],[],[]]
 distances = [[],[],[]]
+weight_arr = [[],[],[]]
 filters = [KalmanFilter(1,1), KalmanFilter(1,1), KalmanFilter(1,1)]
 means = [0.5, 0.5, 0.5]
 
@@ -116,6 +117,14 @@ def trilateration(x1,y1,r1,x2,y2,r2,x3,y3,r3):
   y = (C*D - A*F) / (B*D - A*E)
   return x,y
 
+def wcl(weight,x,y):
+    xiwi=np.multiply(x,weight)
+    yiwi=np.multiply(y,weight)
+    xw=np.sum(xiwi)/np.sum(weight)
+    yw=np.sum(yiwi)/np.sum(weight)
+    return xw,yw
+
+
 def init():  # Initialization function
     for circle in circles:
         circle.center = (0, 0)
@@ -142,13 +151,17 @@ def update(frame):  # Update function
                             var = np.nanvar(rssi_arr[i])
                             filters[i].set_measurement_noise(var)
                             filtered_rssi = filters[i].filter(rssi)
+                            dist = calc_dist(filtered_rssi, -53.42, 1.6)
+                            distances[i].append(dist)
+                            weight_arr[i].append(1/dist)
 
-                            distances[i].append(calc_dist(filtered_rssi, -53.42, 1.6))
-                            means[i] = np.nanmean(distances[i])
-                            global calc_x
-                            global calc_y
-                            calc_x,calc_y = trilateration(nodeA_x,nodeA_y,means[0], nodeB_x, nodeB_y, means[1], nodeC_x, nodeC_y, means[2])
-                        
+                            
+                            #means[i] = np.nanmean(distances[i])
+                            means[i] = dist
+                            # global calc_x
+                            # global calc_y
+                            #calc_x,calc_y = trilateration(nodeA_x,nodeA_y,means[0], nodeB_x, nodeB_y, means[1], nodeC_x, nodeC_y, means[2])
+
                         #serial.read(max(0, size - len(data)))
                         break
                 else:
@@ -160,9 +173,12 @@ def update(frame):  # Update function
     ax.scatter([nodeA_x], [nodeA_y], color="green")
     ax.scatter([nodeB_x], [nodeB_y], color="blue")
     ax.scatter([nodeC_x], [nodeC_y], color="red")
-    
+    #weights = [np.nanmean(weight_arr[0]),np.nanmean(weight_arr[1]),np.nanmean(weight_arr[2])]
+    weights = [1/means[0], 1/means[1], 1/means[2]]
+    calc_x,calc_y = wcl(weights, [nodeA_x,nodeB_x,nodeC_x],[nodeA_y,nodeB_y,nodeC_y])
+    tri_x,tri_y = trilateration(nodeA_x,nodeA_y,means[0], nodeB_x, nodeB_y, means[1], nodeC_x, nodeC_y, means[2])
     ax.scatter([calc_x], [calc_y], color="purple")
-    
+    ax.scatter([tri_x], [tri_y], color="orange")
     circles[0].center = (nodeA_x, nodeA_y)
     circles[0].radius = means[0]
     circles[1].center = (nodeB_x, nodeB_y)
