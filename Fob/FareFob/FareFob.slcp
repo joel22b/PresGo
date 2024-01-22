@@ -29,6 +29,7 @@ component:
 - {id: gatt_service_cte_silabs}
 - {id: gatt_service_cte}
 - {id: iostream_retarget_stdio}
+- {id: bluetooth_feature_extended_scanner}
 - {id: bluetooth_feature_gatt_server}
 - {id: in_place_ota_dfu}
 - {id: bluetooth_feature_sm}

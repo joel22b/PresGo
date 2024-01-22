@@ -50,4 +50,5 @@ gecko_sdk_4.1.0/util/third_party/crypto/sl_component/sl_cryptoacc_library/src \
 gecko_sdk_4.1.0/util/third_party/crypto/sl_component/sl_mbedtls_support/src \
 gecko_sdk_4.1.0/util/third_party/crypto/sl_component/sl_protocol_crypto/src \
 gecko_sdk_4.1.0/util/third_party/crypto/sl_component/sl_psa_driver/src \
+state_machine \
 
