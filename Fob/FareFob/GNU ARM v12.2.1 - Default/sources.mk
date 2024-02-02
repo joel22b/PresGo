@@ -18,6 +18,8 @@ C_DEPS :=
 SUBDIRS := \
 . \
 autogen \
+bt_controller \
+fare_fob \
 gecko_sdk_4.1.0/app/bluetooth/common/gatt_service_cte \
 gecko_sdk_4.1.0/app/bluetooth/common/gatt_service_cte_adv \
 gecko_sdk_4.1.0/app/bluetooth/common/in_place_ota_dfu \
