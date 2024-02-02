@@ -57,7 +57,7 @@
 // <e SL_POWER_MANAGER_DEBUG> Enable debugging feature
 // <i> Enable or disable debugging features (trace the different modules that have requirements).
 // <i> Default: 0
-#define SL_POWER_MANAGER_DEBUG  0
+#define SL_POWER_MANAGER_DEBUG  1
 
 // <o SL_POWER_MANAGER_DEBUG_POOL_SIZE> Maximum numbers of requirements that can be logged
 // <i> Default: 10

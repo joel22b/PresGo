@@ -32,7 +32,7 @@
 #define APP_H
 
 #define IDENTIFER_BT_DATA_START 0x09
-#define IDENTIFER_BT_DATA_BUS "ExtendedBeacon"
+#define IDENTIFER_BT_DATA_BUS "BUSCONNECTION1"
 #define IDENTIFER_BT_DATA_BUS_LEN 14
 
 /**************************************************************************//**

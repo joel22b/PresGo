@@ -42,6 +42,15 @@ static uint8_t advertising_set_handle = 0xff;
 // Number of active connections.
 static uint8_t connection_count = 0;
 
+static uint8_t connectionHandle = 0;
+//static uint32_t serviceHandle = 0;
+
+#define SRVC_UUID           0x66,0x9a,0x0c,0x20,0x00,0x08,0x96,0x9e,0xe2,0x11,0x9e,0xb1,0xe0,0xf2,0x73,0xd9
+const uint8_t SerialPort_service_uuid[16] = {SRVC_UUID};
+static uint16_t sessionHandleLocal;
+static uint16_t serviceHandleLocal;
+static uint16_t rxCharHandle = 0;
+
 #define EM_EVENT_MASK_ALL      (  SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM0 \
                                 | SL_POWER_MANAGER_EVENT_TRANSITION_LEAVING_EM0  \
                                 | SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM1 \
@@ -94,17 +103,7 @@ SL_WEAK void app_process_action(void)
   /////////////////////////////////////////////////////////////////////////////
 
   sm_process();
-}
-
-bool correct_address(bd_addr address)
-{
-  // Name: ExtendedBeacon
-  return address.addr[5] == 0x02
-      && address.addr[4] == 0x80
-      && address.addr[3] == 0xE1
-      && address.addr[2] == 0x88
-      && address.addr[1] == 0x77
-      && address.addr[0] == 0x66;
+  //sl_power_manager_debug_print_em_requirements();
 }
 
 bool isBusAdv(sl_bt_evt_scanner_extended_advertisement_report_t *report)
@@ -148,6 +147,7 @@ bool isBusAdv(sl_bt_evt_scanner_extended_advertisement_report_t *report)
 void sl_bt_on_event(sl_bt_msg_t *evt)
 {
   sl_status_t sc;
+  sl_status_t ret_val;
   bd_addr address;
   uint8_t address_type;
   uint8_t system_id[8];
@@ -214,10 +214,51 @@ void sl_bt_on_event(sl_bt_msg_t *evt)
       sc = sl_bt_legacy_advertiser_start(advertising_set_handle,
                                          sl_bt_advertiser_connectable_scannable);
       app_assert_status(sc);
-      app_log_info("Started advertising\n\r");
+
+      sc = sl_bt_advertiser_stop(advertising_set_handle);
+      if (sc != SL_STATUS_OK) {
+          app_log_info("Stopped adv: ret=%02X\n\r", sc);
+      }
+
+      sc = adv_cte_stop();
+      if (sc != SL_STATUS_OK) {
+          app_log_info("Stopped adv: ret=%02X\n\r", sc);
+      }
+      app_log_info("Started advertising: handle=%02X\n\r", advertising_set_handle);
+
+      // Add GATT service
+      /*sc = sl_bt_gattdb_new_session(&sessionHandleLocal);
+      if (sc != SL_STATUS_OK) {
+          app_log_info("Failed to create new DB session: ret=%02X\n\r", sc);
+      }
+      sc = sl_bt_gattdb_add_service(sessionHandleLocal,
+                                    sl_bt_gattdb_primary_service,
+                                           0,
+                                           16,
+                                           SerialPort_service_uuid,
+                                           &serviceHandleLocal);
+      if (sc != SL_STATUS_OK) {
+          app_log_info("Failed to add GATT service: ret=%02X\n\r", sc);
+      }
+      sc = sl_bt_gattdb_start_service(sessionHandleLocal, serviceHandleLocal);
+      if (sc != SL_STATUS_OK) {
+          app_log_info("Failed to start GATT service: ret=%02X\n\r", sc);
+      }*/
 
       sm_set_adv_handle(&advertising_set_handle);
       sm_update_state(SM_STATE_CHECK_FOR_BUS, true);
+      break;
+
+    case sl_bt_evt_connection_phy_status_id:
+      app_log_info("PHYs Status updated\n\r");
+      break;
+
+    case sl_bt_evt_connection_tx_power_id:
+      app_log_info("TX Power Event\n\r");
+      break;
+
+    case sl_bt_evt_gatt_mtu_exchanged_id:
+      app_log_info("MTU Exchanged Event\n\r");
       break;
 
     // -------------------------------
@@ -244,6 +285,104 @@ void sl_bt_on_event(sl_bt_msg_t *evt)
                                            sl_bt_advertiser_connectable_scannable);
         app_assert_status(sc);
         app_log_info("Continue advertising\n\r");
+      }
+      break;
+
+    case sl_bt_evt_connection_parameters_id:
+      if (connectionHandle != evt->data.evt_connection_parameters.connection) {
+          connectionHandle = evt->data.evt_connection_parameters.connection;
+          ret_val = sl_bt_gatt_discover_primary_services(connectionHandle);
+          if (ret_val != SL_STATUS_OK) {
+              app_log_info("Failed to discover remote gatt services: %02X\n\r", ret_val);
+          }
+      }
+      app_log_info("Connection Parameters: Connection handle %02X\n\r", connectionHandle);
+      break;
+
+    case sl_bt_evt_connection_remote_used_features_id:
+      uint8array *features = &evt->data.evt_connection_remote_used_features.features;
+      app_log_info("Link Layer Features Used by Remote: %02X %02X %02X %02X %02X %02X %02X %02X\n\r",
+                   features->data[7], features->data[6], features->data[5], features->data[4],
+                   features->data[3], features->data[2], features->data[1], features->data[0]);
+      break;
+
+    case sl_bt_evt_gatt_service_id:
+      uint32_t serviceHandle = evt->data.evt_gatt_service.service;
+      app_log_info("GATT Service: Connection handle %02X Service handle %08X\n\r",
+                   evt->data.evt_gatt_service.connection, serviceHandle);
+
+      for (uint8_t i = 0; i < evt->data.evt_gatt_service.uuid.len; i++) {
+          app_log(" %02X", evt->data.evt_gatt_service.uuid.data[i]);
+      }
+      app_log("\n\r");
+
+      char serviceUuid[16] = {0xba, 0x5e, 0xd6, 0x4a, 0xf0, 0x8f, 0x16, 0xa9, 0xe3, 0x41, 0xba, 0xca, 0x09, 0x98, 0xe8, 0xc3};
+      bool match = true;
+      for (uint8_t i = 0; i < evt->data.evt_gatt_service.uuid.len; i++) {
+          if (serviceUuid[i] != evt->data.evt_gatt_service.uuid.data[i]) {
+              match = false;
+              break;
+          }
+      }
+
+      if (match) {
+      app_log_info("Found service with proper UUID\n\r");
+
+      ret_val = sl_bt_gatt_discover_characteristics(evt->data.evt_gatt_service.connection, serviceHandle);
+      //ret_val = sl_bt_gatt_server_send_indication(connectionHandle, characteristic, value_len, value);
+      if (ret_val != SL_STATUS_OK) {
+          if (ret_val == SL_STATUS_IN_PROGRESS) {
+              app_log_info("Discover characteristics in progress\n\r");
+          }
+          else {
+              app_log_info("Failed to discover remote gatt services: %02X\n\r", ret_val);
+          }
+      }
+      }
+      break;
+
+    case sl_bt_evt_gatt_procedure_completed_id:
+      if (evt->data.evt_gatt_procedure_completed.result == SL_STATUS_OK) {
+          app_log_info("GATT Procedure completed successfully: Connection handle %02X\n\r", connectionHandle);
+      }
+      else {
+          app_log_info("GATT Procedure completed with error %02X: Connection handle %02X\n\r",
+                       evt->data.evt_gatt_procedure_completed.result, connectionHandle);
+      }
+      break;
+
+    case sl_bt_evt_gatt_characteristic_id:
+      app_log_info("GATT Characteristics:\n\r Connection handle %02X\n\r Characteristic handle %04X\n\r Properties %02X\n\r",
+                   evt->data.evt_gatt_characteristic.connection,
+                   evt->data.evt_gatt_characteristic.characteristic,
+                   evt->data.evt_gatt_characteristic.properties);
+      break;
+
+    case sl_bt_evt_gatt_server_characteristic_status_id:
+      //sl_status_t ret_val;
+      //connectionHandle = evt->data.evt_gatt_server_characteristic_status.connection;
+      app_log_info("GATT Server Characteristics:\n\r Connection handle %02X\n\r Characteristic handle %04X\n\r Client Config %04X\n\r Client Config Flags %04X\n\r Status Flags %02X\n\r",
+                   evt->data.evt_gatt_server_characteristic_status.connection,
+                   evt->data.evt_gatt_server_characteristic_status.characteristic,
+                   evt->data.evt_gatt_server_characteristic_status.client_config,
+                   evt->data.evt_gatt_server_characteristic_status.client_config_flags,
+                   evt->data.evt_gatt_server_characteristic_status.status_flags);
+      rxCharHandle = evt->data.evt_gatt_server_characteristic_status.characteristic;
+      break;
+
+    case sl_bt_evt_gatt_server_user_write_request_id:
+      app_log_info("GATT Server Write Request:\n\r Connection handle %02X\n\r Characteristic handle %04X\n\r Att opcode %02X\n\r Offset %04X\n\r",
+                         evt->data.evt_gatt_server_user_write_request.connection,
+                         evt->data.evt_gatt_server_user_write_request.characteristic,
+                         evt->data.evt_gatt_server_user_write_request.att_opcode,
+                         evt->data.evt_gatt_server_user_write_request.offset);
+
+      uint16_t val = 0xBEEF;
+      sc = sl_bt_gatt_server_send_notification(evt->data.evt_gatt_server_user_write_request.connection,
+                                               rxCharHandle,
+                                               2, (uint8_t*)&val);
+      if (sc != SL_STATUS_OK) {
+          app_log_info("Failed to send GATT notification: %02X\n\r", sc);
       }
       break;
 
@@ -285,7 +424,8 @@ void sl_bt_on_event(sl_bt_msg_t *evt)
       if (isBusAdv(&evt->data.evt_scanner_extended_advertisement_report))
       {
         //sl_led_toggle(&sl_led_led0);
-        app_log_info("Correct extended found: \n\r");
+        //app_log_info("Correct extended found: \n\r");
+        sm_update_state(SM_STATE_RAPID_ADV, true);
         /*app_log_info("Event flags: %02X\n\r", evt->data.evt_scanner_extended_advertisement_report.event_flags);
         app_log_info("Address type: %02X\n\r", evt->data.evt_scanner_extended_advertisement_report.address_type);
         app_log_info("Bonding: %02X\n\r", evt->data.evt_scanner_extended_advertisement_report.bonding);

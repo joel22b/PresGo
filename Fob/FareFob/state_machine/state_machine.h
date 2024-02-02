@@ -11,7 +11,8 @@
 #define SM_UNKNOWN_STATE_NEXT 3
 
 // Timer duration in ms
-#define SM_DURATION_CHECK_FOR_BUS 600
+#define SM_DURATION_CHECK_FOR_BUS 100
+#define SM_DURATION_RAPID_ADV 1000
 #define SM_DURATION_SLEEP 5000
 
 // State definitions

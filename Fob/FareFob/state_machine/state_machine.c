@@ -10,6 +10,7 @@
 #include "sl_bluetooth.h"
 #include "app_log.h"
 #include "sl_simple_led_instances.h"
+#include "sli_gatt_service_cte_adv.h"
 
 // Variables
 sm_state_t curr_state;
@@ -103,7 +104,7 @@ void sm_state_check_for_bus_callback(sl_sleeptimer_timer_handle_t *handle, void 
 
 void sm_state_check_for_bus_enter() {
   sl_status_t ret_val;
-  ret_val = sl_bt_scanner_start(0x5, 0x2);
+  ret_val = sl_bt_scanner_start(sl_bt_scanner_scan_phy_1m, 0x2);
   if (ret_val != SL_STATUS_OK)
   {
       app_log_info("Failed to start bluetooth scanner: return value = %d\n\r",
@@ -175,10 +176,52 @@ void sm_state_sleep_enter() {
   }
 }
 
+void sm_state_rapid_adv_callback(sl_sleeptimer_timer_handle_t *handle, void *data)
+{
+  sm_update_state(SM_STATE_CHECK_FOR_BUS, false);
+
+  (void)(handle);
+  (void)(data);
+}
+
 void sm_state_rapid_adv_enter() {
-  // TODO: Start advertisements
+  sl_status_t ret_val;
+  ret_val = adv_cte_start();
+  if (ret_val != SL_STATUS_OK) {
+      app_log_info("Started legacy adv: ret=%02X\n\r", ret_val);
+  }
+
+  ret_val = sl_bt_legacy_advertiser_start(*advertising_set_handle,
+                                           sl_bt_advertiser_connectable_scannable);
+  if (ret_val != SL_STATUS_OK) {
+      app_log_info("Started legacy adv: ret=%02X\n\r", ret_val);
+  }
+
+  // Set timer for sleep state
+  /*uint32_t timer_timeout = sl_sleeptimer_ms_to_tick(SM_DURATION_RAPID_ADV);
+
+  ret_val = sl_sleeptimer_start_timer(&timer,
+                                      timer_timeout,
+                                      sm_state_rapid_adv_callback,
+                                      (void *)NULL,
+                                      20,
+                                      0);
+  if (ret_val != SL_STATUS_OK)
+  {
+      app_log_info("Failed to start timer for SM_STATE_SLEEP: return value = %d\n\r",
+                   ret_val);
+  }*/
 }
 
 void sm_state_rapid_adv_exit() {
-  // TODO: Stop advertisements
+  sl_status_t ret_val;
+  ret_val = sl_bt_advertiser_stop(*advertising_set_handle);
+  if (ret_val != SL_STATUS_OK) {
+      app_log_info("Stopped legacy adv: ret=%02X\n\r", ret_val);
+  }
+
+  ret_val = adv_cte_stop();
+  if (ret_val != SL_STATUS_OK) {
+      app_log_info("Stopped cte adv: ret=%02X\n\r", ret_val);
+  }
 }
