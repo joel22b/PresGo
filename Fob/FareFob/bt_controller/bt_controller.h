@@ -37,6 +37,7 @@ void btc_connect_closed(sl_bt_evt_connection_closed_t* evt_connect_closed);
 void btc_connect_parameters(sl_bt_evt_connection_parameters_t* evt_connect_parameters);
 void btc_connect_gatt_service(sl_bt_evt_gatt_service_t* evt_gatt_service);
 void btc_connect_gatt_characteristic(sl_bt_evt_gatt_server_characteristic_status_t* evt_gatt_characteristic);
+sl_status_t btc_connect_tx_data(uint8_t connection, uint8array* data);
 void btc_connect_rx_data(sl_bt_evt_gatt_server_user_write_request_t* evt_write_request);
 
 /* ===========================================

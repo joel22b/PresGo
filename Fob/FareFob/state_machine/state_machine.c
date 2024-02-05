@@ -9,6 +9,8 @@
 
 #include "sl_status.h"
 
+#include "fare_fob/config.h"
+
 // Variables
 sm_state_t curr_state;
 sm_state_t next_state;
@@ -28,9 +30,17 @@ void sm_process() {
         case SM_STATE_BOOT:
           // Only valid transition is check for bus
           if (next_state == SM_STATE_CHECK_FOR_BUS) {
+              sm_state_boot_exit();
               curr_state = SM_STATE_CHECK_FOR_BUS;
               sm_state_check_for_bus_enter();
           }
+#ifdef DEBUG_JUST_ADV
+          else if (next_state == SM_STATE_RAPID_ADV) {
+              sm_state_boot_exit();
+              curr_state = SM_STATE_RAPID_ADV;
+              sm_state_rapid_adv_enter();
+          }
+#endif
           break;
         case SM_STATE_CHECK_FOR_BUS:
           if (next_state == SM_STATE_SLEEP) {

@@ -12,44 +12,9 @@
 #include "sli_gatt_service_cte_adv.h"
 
 #include "state_machine/state_machine.h"
+#include "fare_fob/fare_fob.h"
 
 static uint8_t advertising_set_handle = 0xff;
-
-#define IDENTIFER_BT_DATA_START 0x09
-#define IDENTIFER_BT_DATA_BUS "BUSCONNECTION1"
-#define IDENTIFER_BT_DATA_BUS_LEN 14
-
-bool isBusAdv(sl_bt_evt_scanner_extended_advertisement_report_t *report)
-{
-  // Ensure complete advertisement
-  if (!report->data_completeness == sl_bt_scanner_data_status_complete) {
-      return false;
-  }
-
-  // TODO: Add Adv SID check
-
-  // Check data for Bus identifier
-  bool dataStarted = false;
-  uint8_t dataIndex = 0;
-  for (uint8_t i = 0; i < report->data.len; i++) {
-
-      if (dataStarted) {
-          if (report->data.data[i] == IDENTIFER_BT_DATA_BUS[dataIndex++]) {
-              if (dataIndex >= IDENTIFER_BT_DATA_BUS_LEN) {
-                  return true;
-              }
-          }
-          else {
-              return false;
-          }
-      }
-      else if (report->data.data[i] == IDENTIFER_BT_DATA_START) {
-          dataStarted = true;
-      }
-  }
-
-  return false;
-}
 
 void
 btc_adv_init ()
@@ -74,10 +39,12 @@ btc_adv_init ()
 void
 btc_adv_start (btc_adv_services_t adv_services)
 {
+  app_log_info("Started adv\n\r");
   sl_status_t ret_val;
 
   if (adv_services & btc_adv_services_cte)
   {
+      app_log_info("Started adv CTE\n\r");
       ret_val = adv_cte_start ();
       if (ret_val != SL_STATUS_OK)
       {
@@ -87,6 +54,7 @@ btc_adv_start (btc_adv_services_t adv_services)
 
   if (adv_services & btc_adv_services_legacy)
   {
+      app_log_info("Started adv Legacy\n\r");
       ret_val = sl_bt_legacy_advertiser_start (
           advertising_set_handle, sl_bt_advertiser_connectable_scannable);
       if (ret_val != SL_STATUS_OK)
@@ -99,9 +67,11 @@ btc_adv_start (btc_adv_services_t adv_services)
 void
 btc_adv_stop (btc_adv_services_t adv_services)
 {
+  app_log_info("Stopped adv\n\r");
   sl_status_t ret_val;
 
   if (adv_services & btc_adv_services_cte) {
+      app_log_info("Stopped adv CTE\n\r");
     ret_val = sl_bt_advertiser_stop (advertising_set_handle);
     if (ret_val != SL_STATUS_OK) {
       app_log_info("Stopped legacy adv: ret=%02X\n\r", ret_val);
@@ -109,6 +79,7 @@ btc_adv_stop (btc_adv_services_t adv_services)
   }
 
   if (adv_services & btc_adv_services_legacy) {
+      app_log_info("Stopped adv Legacy\n\r");
       ret_val = adv_cte_stop ();
       if (ret_val != SL_STATUS_OK) {
           app_log_info("Stopped cte adv: ret=%02X\n\r", ret_val);
@@ -136,7 +107,7 @@ void
 btc_adv_extended (
     sl_bt_evt_scanner_extended_advertisement_report_t *evt_adv_extended)
 {
-  if (isBusAdv(evt_adv_extended)) {
+  if (ff_is_bus_adv(evt_adv_extended)) {
       sm_update_state(SM_STATE_RAPID_ADV, true);
   }
 }

@@ -10,6 +10,8 @@
 #include "app_log.h"
 #include "app_assert.h"
 
+#include "fare_fob/fare_fob.h"
+
 const uint8_t service_uuid[16] = {0xba, 0x5e, 0xd6, 0x4a, 0xf0, 0x8f, 0x16, 0xa9, 0xe3, 0x41, 0xba, 0xca, 0x09, 0x98, 0xe8, 0xc3};
 
 static uint8_t connection_count;
@@ -128,16 +130,22 @@ void btc_connect_gatt_characteristic(sl_bt_evt_gatt_server_characteristic_status
   handle->tx = evt_gatt_characteristic->characteristic;
 }
 
+sl_status_t btc_connect_tx_data(uint8_t connection, uint8array* data) {
+  btc_connect_handle_t* handle = btc_get_connect_handle(connection);
+  if (handle->tx == 0x0000) {
+      // Handle not configured properly
+      return SL_STATUS_NOT_INITIALIZED;
+  }
+
+  return sl_bt_gatt_server_send_notification(
+      connection, handle->tx, data->len, data->data);
+}
+
 void btc_connect_rx_data(sl_bt_evt_gatt_server_user_write_request_t* evt_write_request) {
   btc_connect_handle_t* handle = btc_get_connect_handle(evt_write_request->connection);
   if (handle->rx == 0x0000) {
       handle->rx = evt_write_request->characteristic;
   }
 
-  uint16_t val = 0xBEEF;
-  sl_status_t ret_val = sl_bt_gatt_server_send_notification(
-      evt_write_request->connection, handle->tx, 2, (uint8_t*)&val);
-  if (ret_val != SL_STATUS_OK) {
-      app_log_info("Failed to send GATT notification: %02X\n\r", ret_val);
-  }
+  ff_rx_data(evt_write_request->connection, &evt_write_request->value);
 }
