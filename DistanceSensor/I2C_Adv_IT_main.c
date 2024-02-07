@@ -367,65 +367,66 @@ int main(void)
 #endif /* MASTER_BOARD */
   
   /* Infinite loop */
-  
+  /* Wait for User push-button (PUSH1) press before starting the Communication */
+  //	  ToFSensor = 1; // Select ToFSensor: 0=Left, 1=Center, 2=Right
+  //
+  	  /* Those basic I2C read functions can be used to check your own I2C functions */
+  	    status = VL53L1_RdByte(dev, 0x010F, &byteData);
+  	    printf("VL53L1X Model_ID: %X\r\n", byteData);
+  	    status = VL53L1_RdByte(dev, 0x0110, &byteData);
+  	    printf("VL53L1X Module_Type: %X\r\n", byteData);
+  	    status = VL53L1_RdWord(dev, 0x010F, &wordData);
+  	    printf("VL53L1X: %X\r\n", wordData);
+
+  //	    while(sensorState==0){
+  //	  		status = VL53L1X_BootState(dev, &sensorState);
+  //	  	HAL_Delay(2);
+  //	    }
+  	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET);
+
+  	  /* This function must to be called to initialize the sensor with the default setting  */
+  	  printf("Init Sensor");
+  	    status = VL53L1X_SensorInit(dev);
+  	    printf("Init Sensor Done");
+  	    /* Optional functions to be used to change the main ranging parameters according the application requirements to get the best ranging performances */
+  	  printf("Set Distance Mode");
+  	  status = VL53L1X_SetDistanceMode(dev, 2); /* 1=short, 2=long */
+  	  printf("Set Distance Mode Done");
+  	  printf("Set Timing Budget");
+  	    status = VL53L1X_SetTimingBudgetInMs(dev, 100); /* in ms possible values [20, 50, 100, 200, 500] */
+  	    printf("Set Timing Budget Done");
+
+  	    printf("Set InterMeasurementinMS");
+  	    status = VL53L1X_SetInterMeasurementInMs(dev, 100); /* in ms, IM must be > = TB */
+  	    printf("Set InterMeasurementinMS");
+  	  //  status = VL53L1X_SetOffset(dev,20); /* offset compensation in mm */
+  	  //  status = VL53L1X_SetROI(dev, 16, 16); /* minimum ROI 4,4 */
+  	  //	status = VL53L1X_CalibrateOffset(dev, 140, &offset); /* may take few second to perform the offset cal*/
+  	  //	status = VL53L1X_CalibrateXtalk(dev, 1000, &xtalk); /* may take few second to perform the xtalk cal */
+  	    printf("VL53L1X Ultra Lite Driver Example running ...\n");
+  	    status = VL53L1X_StartRanging(dev);
+  	  while(1){ /* read and display data */
+  	  //	    	printf("going into data ready loop");
+  	  	  	  while (dataReady == 0){
+
+  	  	  		  status = VL53L1X_CheckForDataReady(dev, &dataReady);
+  	  	  		  HAL_Delay(2);
+  	  	  	  }
+  	  //	  	printf("exiting data ready loop");
+  	  	  	  dataReady = 0;
+  	  	  	  status = VL53L1X_GetRangeStatus(dev, &RangeStatus);
+  	  	  	  status = VL53L1X_GetDistance(dev, &Distance);
+  	  	  	  status = VL53L1X_GetSignalRate(dev, &SignalRate);
+  	  	  	  status = VL53L1X_GetAmbientRate(dev, &AmbientRate);
+  	  	  	  status = VL53L1X_GetSpadNb(dev, &SpadNum);
+  	  	  	  status = VL53L1X_ClearInterrupt(dev); /* clear interrupt has to be called to enable next interrupt*/
+  	  	  	  printf("RangeStatus: %u, Distance: %u, SignalRate: %u, AmbientRate: %u,SpadNum: %u\r\n", RangeStatus, Distance, SignalRate, AmbientRate,SpadNum);
+  	  	    }
   while (1)
   {
 #ifdef MASTER_BOARD
-    /* Wait for User push-button (PUSH1) press before starting the Communication */
-//	  ToFSensor = 1; // Select ToFSensor: 0=Left, 1=Center, 2=Right
-//
-	  /* Those basic I2C read functions can be used to check your own I2C functions */
-	    status = VL53L1_RdByte(dev, 0x010F, &byteData);
-	    printf("VL53L1X Model_ID: %X\r\n", byteData);
-	    status = VL53L1_RdByte(dev, 0x0110, &byteData);
-	    printf("VL53L1X Module_Type: %X\r\n", byteData);
-	    status = VL53L1_RdWord(dev, 0x010F, &wordData);
-	    printf("VL53L1X: %X\r\n", wordData);
 
-//	    while(sensorState==0){
-//	  		status = VL53L1X_BootState(dev, &sensorState);
-//	  	HAL_Delay(2);
-//	    }
-	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET);
 
-	  /* This function must to be called to initialize the sensor with the default setting  */
-	  printf("Init Sensor");
-	    status = VL53L1X_SensorInit(dev);
-	    printf("Init Sensor Done");
-	    /* Optional functions to be used to change the main ranging parameters according the application requirements to get the best ranging performances */
-	  printf("Set Distance Mode");
-	  status = VL53L1X_SetDistanceMode(dev, 2); /* 1=short, 2=long */
-	  printf("Set Distance Mode Done");
-	  printf("Set Timing Budget");
-	    status = VL53L1X_SetTimingBudgetInMs(dev, 100); /* in ms possible values [20, 50, 100, 200, 500] */
-	    printf("Set Timing Budget Done");
-
-	    printf("Set InterMeasurementinMS");
-	    status = VL53L1X_SetInterMeasurementInMs(dev, 100); /* in ms, IM must be > = TB */
-	    printf("Set InterMeasurementinMS");
-	  //  status = VL53L1X_SetOffset(dev,20); /* offset compensation in mm */
-	  //  status = VL53L1X_SetROI(dev, 16, 16); /* minimum ROI 4,4 */
-	  //	status = VL53L1X_CalibrateOffset(dev, 140, &offset); /* may take few second to perform the offset cal*/
-	  //	status = VL53L1X_CalibrateXtalk(dev, 1000, &xtalk); /* may take few second to perform the xtalk cal */
-	    printf("VL53L1X Ultra Lite Driver Example running ...\n");
-	    status = VL53L1X_StartRanging(dev);
-	    while(1){ /* read and display data */
-//	    	printf("going into data ready loop");
-	  	  while (dataReady == 0){
-
-	  		  status = VL53L1X_CheckForDataReady(dev, &dataReady);
-	  		  HAL_Delay(2);
-	  	  }
-//	  	printf("exiting data ready loop");
-	  	  dataReady = 0;
-	  	  status = VL53L1X_GetRangeStatus(dev, &RangeStatus);
-	  	  status = VL53L1X_GetDistance(dev, &Distance);
-	  	  status = VL53L1X_GetSignalRate(dev, &SignalRate);
-	  	  status = VL53L1X_GetAmbientRate(dev, &AmbientRate);
-	  	  status = VL53L1X_GetSpadNb(dev, &SpadNum);
-	  	  status = VL53L1X_ClearInterrupt(dev); /* clear interrupt has to be called to enable next interrupt*/
-	  	  printf("RangeStatus: %u, Distance: %u, SignalRate: %u, AmbientRate: %u,SpadNum: %u\r\n", RangeStatus, Distance, SignalRate, AmbientRate,SpadNum);
-	    }
 	  printf("Wait for User push-button (PUSH1) press or enter 'c'/'C' character.\n\r");
     while((BSP_PB_GetState(BSP_PUSH1) == GPIO_PIN_RESET) && (pressCToContinue == 0))
     {
