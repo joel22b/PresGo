@@ -10,8 +10,10 @@ import queue
 import re
 import random
 import serial
+import signal
 import sys
 import threading
+from threading import Event
 import time
 import tkinter
 
@@ -19,6 +21,9 @@ MAX_NUM_TAGS = 300
 
 DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "../bt_host_positioning/config/positioning_config.json")
 DEFAULT_CONNECTION = {"host": "localhost", "port": 1883}
+
+close_event = Event()
+running = True
 
 
 class Visualizer(object):
@@ -88,17 +93,56 @@ class Visualizer(object):
     return in_circle and in_height_range
 
 
+def signal_handler(sig, frame):
+  global running
+  running = False
+  close_event.set()
+
+
+def check_close_event():
+  if close_event.is_set():
+    root.destroy()
+  else:
+    root.after(100, check_close_event)
+
+
 def read_from_serial_port(ser):
-  while True:
-    reading = ser.readline().decode().rstrip()
-    if reading:
-      print("Received:", reading)
+  while running:
+    read_data = ser.readline().decode().rstrip().replace("\r", "")
+    if read_data: 
+      print(f"Received: {read_data}")
 
 
 def write_to_serial_port(ser):
-  while True:
-    ser.write("Hello from Raspberry Pi\n")
+  while running:
+    ser.write("Hello from Raspberry Pi\n".encode())
     time.sleep(2)
+
+
+def setup_gui():
+  global root, canvas, gui_text
+  root = tkinter.Tk()
+  root.title('PresGo GUI')
+  canvas = tkinter.Canvas(root, width=400, height=300)
+  canvas.pack()
+  gui_text = canvas.create_text(200, 200, text='Not in Cylinder', font=('Arial', 20))
+  root.after(100, check_close_event)
+
+
+def setup_mqtt():
+  parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  parser.add_argument("-c", metavar="CONFIG_FILE", help="Configuration file path", default=DEFAULT_CONFIG)
+  parser.add_argument("-m", metavar="HOST[:PORT]", help="MQTT broker connection parameters", default=DEFAULT_CONNECTION, type=mqtt_conn_type)
+  args = parser.parse_args()
+
+  v = Visualizer()
+  v.parse_config(args.c)
+
+  client = mqtt.Client(userdata=v)
+  client.on_connect = on_connect
+  client.on_message = on_message
+  client.connect(host=args.m["host"], port=args.m["port"])
+  client.loop_forever()
 
 
 def mqtt_conn_type(arg):
@@ -153,42 +197,20 @@ def on_message(client, userdata, msg):
       userdata.q_ang.put(entry)
 
 
-def setup_gui():
-  global root, canvas, gui_text
-  root = tkinter.Tk()
-  root.title('PresGo GUI')
-  canvas = tkinter.Canvas(root, width=400, height=300)
-  canvas.pack()
-  gui_text = canvas.create_text(200, 200, text='Not in Cylinder', font=('Arial', 20))
-
-
-def setup_mqtt():
-  parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser.add_argument("-c", metavar="CONFIG_FILE", help="Configuration file path", default=DEFAULT_CONFIG)
-  parser.add_argument("-m", metavar="HOST[:PORT]", help="MQTT broker connection parameters", default=DEFAULT_CONNECTION, type=mqtt_conn_type)
-  args = parser.parse_args()
-
-  v = Visualizer()
-  v.parse_config(args.c)
-
-  client = mqtt.Client(userdata=v)
-  client.on_connect = on_connect
-  client.on_message = on_message
-  client.connect(host=args.m["host"], port=args.m["port"])
-  client.loop_forever()
-
-
 def main():
+  # setup signal handler for graceful shutdown
+  signal.signal(signal.SIGINT, signal_handler)
+
   # setup gui and initialize global variables used by mqtt callbacks
   setup_gui()
 
   # mqtt operations on separate thread to not block main gui thread
-  thread_mqtt = threading.Thread(target=setup_mqtt, daemon=True)
-  thread_mqtt.start()
+  #thread_mqtt = threading.Thread(target=setup_mqtt, daemon=True)
+  #thread_mqtt.start()
 
   # setup serial port for communicating with bluenrg board
-  ser = serial.Serial(port='/dev/ttyACM1', baudrate=115200, timeout=10)
-  ser.flush
+  # /dev/ttyACM0 if plugged in before or without antenna array, else /dev/ttyACM1
+  ser = serial.Serial(port='/dev/ttyACM0', baudrate=115200, timeout=10)
 
   # serial read on separate thread to not block main gui thread
   thread_ser_read = threading.Thread(target=read_from_serial_port, daemon=True, args=(ser,))
@@ -200,6 +222,7 @@ def main():
 
   # GUI blocking loop
   root.mainloop()
+
 
 if __name__ == "__main__":
   main()
