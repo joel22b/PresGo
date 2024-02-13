@@ -86,6 +86,10 @@
                                     <listOptionValue builtIn="false" value="USE_FULL_LL_DRIVER"/>
                                     									
                                     <listOptionValue builtIn="false" value="USER_BUTTON=BSP_PUSH1"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="EXTENDED_ADV"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="LEGACY_ADV"/>
                                     								
                                 </option>
                                 								

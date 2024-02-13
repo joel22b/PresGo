@@ -72,9 +72,31 @@ static uint8_t scan_resp_data[19] = {
 #define UUID_SERVICE_DATA_LEN   19
 #endif
 
-static uint8_t adv_data[5+NAME_LENGTH+UUID_SERVICE_DATA_LEN] = {
-  0x02,AD_TYPE_FLAGS, FLAG_BIT_LE_GENERAL_DISCOVERABLE_MODE|FLAG_BIT_BR_EDR_NOT_SUPPORTED,
-  NAME_LENGTH+1, AD_TYPE_COMPLETE_LOCAL_NAME};
+#define EXT_ADV_INTERVAL        32 /* 20 (Changed) ms */
+/* PHY used in extended advertising events. One between: LE_1M_PHY,
+  LE_2M_PHY and LE_CODED_PHY (LE_CODED_PHY not possible for direction finding).  */
+#define EXT_ADV_PHY LE_1M_PHY
+
+static uint8_t adv_data[] = {
+  /* Advertising data: Flags AD Type */
+  0x02, 0x01, 0x06,
+  /* Advertising data: manufacturer specific data */
+  26, //len
+  AD_TYPE_MANUFACTURER_SPECIFIC_DATA,  //manufacturer type
+  0x00, 0x00, //Company identifier code
+  0x02,       // ID
+  0x15,       //Length of the remaining payload
+  0xE2, 0x0A, 0x39, 0xF4, 0x73, 0xF5, 0x4B, 0xC4, //Location UUID
+  0xA1, 0x2F, 0x17, 0xD1, 0xAD, 0x07, 0xA9, 0x61,
+  0x00, 0x05, // Major number
+  0x00, 0x07, // Minor number
+  (uint8_t)-56,         // Tx power measured at 1 m of distance (in dBm)
+  15,       // Length of following AD data
+  0x09,'B','U','S','C','O','N','N','E','C','T','I','O','N','1'
+};
+//static uint8_t adv_data[5+NAME_LENGTH+UUID_SERVICE_DATA_LEN] = {
+//  0x02,AD_TYPE_FLAGS, FLAG_BIT_LE_GENERAL_DISCOVERABLE_MODE|FLAG_BIT_BR_EDR_NOT_SUPPORTED,
+//  NAME_LENGTH+1, AD_TYPE_COMPLETE_LOCAL_NAME};
 
 #define NON_DISCOVERABLE_ADV_DATA_LEN   3               // Do not send name and UUID if not discoverable
 #define DISCOVERABLE_ADV_DATA_LEN       sizeof(adv_data)
@@ -170,7 +192,7 @@ tBleStatus StartGeneralConnectionEstablishment(void)
 
 void StopScan(void)
 {
-  PRINTF("Stop Scanning.\n");
+  PRINTF("Stop Scanning.\n\r");
   aci_gap_terminate_proc(procedure);
 }
 
@@ -178,9 +200,9 @@ void StopScan(void)
 tBleStatus ConfigureAdvertising(uint8_t discoverable)
 {
   tBleStatus ret;
-  
+  discoverable = 1;
   if(discoverable){
-    adv_data[2] = FLAG_BIT_LE_GENERAL_DISCOVERABLE_MODE|FLAG_BIT_BR_EDR_NOT_SUPPORTED;    
+    /*adv_data[2] = FLAG_BIT_LE_GENERAL_DISCOVERABLE_MODE|FLAG_BIT_BR_EDR_NOT_SUPPORTED;
     // Add name to advertising data
     Osal_MemCpy(adv_data+5,name,NAME_LENGTH);
 #if !USE_SCAN_RESP_DATA    
@@ -194,36 +216,35 @@ tBleStatus ConfigureAdvertising(uint8_t discoverable)
     scan_resp_data[1] = AD_TYPE_128_BIT_UUID_SERVICE_DATA;
     Osal_MemCpy(scan_resp_data+2,SerialPort_service_uuid,sizeof(SerialPort_service_uuid));
     scan_resp_data[18] = PROFILE_DATA_COLLECTOR; // Service data, to identify different kind of devices (0: slave-only device, 1: master slave)
-#endif
+#endif*/
     
     ret = aci_gap_set_advertising_configuration(0x00, // Advertising handle
-                                                0x02, // General discoverable mode
-                                                0x0013, // Connectable, Scannable, Legacy
-                                                ADV_INTERVAL_MIN,
-                                                ADV_INTERVAL_MAX,
+    											GAP_MODE_GENERAL_DISCOVERABLE, // General discoverable mode
+												ADV_PROP_NONE,//0x0013, // Connectable, Scannable, Legacy
+												EXT_ADV_INTERVAL,
+												EXT_ADV_INTERVAL,
                                                 ADV_CH_ALL,
                                                 0, NULL, // No peer address
                                                 ADV_NO_WHITE_LIST_USE,
-                                                127, // No preference for TX power
-                                                LE_1M_PHY, // Primary_Advertising_PHY (not used for legacy adv)
+                                                0, // No preference for TX power
+												(EXT_ADV_PHY==LE_2M_PHY)?LE_1M_PHY:EXT_ADV_PHY,//LE_1M_PHY, // Primary_Advertising_PHY (not used for legacy adv)
                                                 0, // Secondary_Advertising_Max_Skip (not used for legacy adv)
-                                                LE_1M_PHY, //  Secondary_Advertising_PHY (not used for legacy adv)
+												EXT_ADV_PHY,//LE_1M_PHY, //  Secondary_Advertising_PHY (not used for legacy adv)
                                                 0, // Advertising_SID (not used for legacy adv)
                                                 0); // No scan request notification
-    PRINTF("Advertising configuration (discoverable) 0x%02X\n", ret);
+    PRINTF("Advertising configuration (discoverable) 0x%02X\n\r", ret);
     if(ret)
       return ret;
     
-#if USE_SCAN_RESP_DATA
+/*#if USE_SCAN_RESP_DATA
     ret = aci_gap_set_scan_response_data(0x00, sizeof(scan_resp_data), scan_resp_data);
     if(ret)
       return ret;
-#endif
+#endif*/
      
     ret = aci_gap_set_advertising_data(0x00, // Advertising handle
-                                        0x03, // Complete data
-                                        DISCOVERABLE_ADV_DATA_LEN, adv_data);
-    PRINTF("aci_gap_set_advertising_data 0x%02X\n", ret);
+    		ADV_COMPLETE_DATA, sizeof(adv_data), adv_data);
+    PRINTF("aci_gap_set_advertising_data 0x%02X\n\r", ret);
     return ret;
   }
   else {
@@ -243,14 +264,14 @@ tBleStatus ConfigureAdvertising(uint8_t discoverable)
                                                 LE_1M_PHY, //  Secondary_Advertising_PHY (not used for legacy adv)
                                                 0, // Advertising_SID (not used for legacy adv)
                                                 0); // No scan request notification
-    PRINTF("Advertising configuration (non-discoverable) 0x%02X\n", ret);
+    PRINTF("Advertising configuration (non-discoverable) 0x%02X\n\r", ret);
     if(ret)
       return ret;
     
     ret = aci_gap_set_advertising_data(0x00, // Advertising handle
                                         0x03, // Complete data
                                         NON_DISCOVERABLE_ADV_DATA_LEN, adv_data);
-    PRINTF("aci_gap_set_advertising_data 0x%02X\n", ret);
+    PRINTF("aci_gap_set_advertising_data 0x%02X\n\r", ret);
     return ret;
   }
 }

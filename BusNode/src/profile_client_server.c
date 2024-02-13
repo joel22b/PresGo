@@ -210,7 +210,10 @@ uint8_t DeviceInit(void)
   uint8_t role = GAP_CENTRAL_ROLE|GAP_PERIPHERAL_ROLE;
   
   uint8_t addr_len;
-  uint8_t address[6];
+  //uint8_t address[6];
+  uint8_t address[CONFIG_DATA_PUBADDR_LEN] = {0x66,0x77,0x88,0xE1,0x80,0x02};
+
+  aci_hal_write_config_data(CONFIG_DATA_PUBADDR_OFFSET, CONFIG_DATA_PUBADDR_LEN, address);
 
   /* Set the TX power to 0 dBm */
   aci_hal_set_tx_power_level(0, 24);
@@ -230,8 +233,10 @@ uint8_t DeviceInit(void)
   }
   
   /* GAP Init */
-  ret = aci_gap_init(role, 0x00, strlen(name), STATIC_RANDOM_ADDR, &service_handle,  
-                     &dev_name_char_handle, &appearance_char_handle);
+  //ret = aci_gap_init(role, 0x00, strlen(name), STATIC_RANDOM_ADDR, &service_handle,
+  //                   &dev_name_char_handle, &appearance_char_handle);
+  ret = aci_gap_init(GAP_BROADCASTER_ROLE, 0x00, 0x08, PUBLIC_ADDR, &service_handle, &dev_name_char_handle, &appearance_char_handle);
+
   
   if (ret != BLE_STATUS_SUCCESS) {
     PRINTF("Error in aci_gap_init() 0x%02x\r\n", ret);
@@ -239,7 +244,52 @@ uint8_t DeviceInit(void)
   } else {
     //PRINTF("aci_gap_init() --> SUCCESS\r\n");
   }
-  
+
+  /*ret = aci_gap_set_advertising_configuration(1, GAP_MODE_GENERAL_DISCOVERABLE,
+                                                ADV_PROP_NONE,
+                                                32, 32,
+                                                ADV_CH_ALL,
+                                                0,NULL,
+                                                ADV_NO_WHITE_LIST_USE,
+                                                0,
+                                                (LE_1M_PHY==LE_2M_PHY)?LE_1M_PHY:LE_1M_PHY,
+                                                0,
+												LE_1M_PHY,
+                                                0,
+                                                0 );
+    if (ret != BLE_STATUS_SUCCESS)
+    {
+      PRINTF("Error in aci_gap_set_advertising_configuration() 0x%02x\r\n", ret);
+      return ret;
+    }
+
+    uint8_t adv_data[] = {
+
+      0x02, 0x01, 0x06,
+
+      26, //len
+      AD_TYPE_MANUFACTURER_SPECIFIC_DATA,  //manufacturer type
+      0x00, 0x00, //Company identifier code
+      0x02,       // ID
+      0x15,       //Length of the remaining payload
+      0xE2, 0x0A, 0x39, 0xF4, 0x73, 0xF5, 0x4B, 0xC4, //Location UUID
+      0xA1, 0x2F, 0x17, 0xD1, 0xAD, 0x07, 0xA9, 0x61,
+      0x00, 0x05, // Major number
+      0x00, 0x07, // Minor number
+      (uint8_t)-56,         // Tx power measured at 1 m of distance (in dBm)
+      15,       // Length of following AD data
+      0x09,'B','U','S','C','O','N','N','E','C','T','I','O','N','1'
+    };
+
+    ret = aci_gap_set_advertising_data(1, ADV_COMPLETE_DATA, sizeof(adv_data), adv_data);
+    if (ret != BLE_STATUS_SUCCESS)
+    {
+      PRINTF("Error in aci_gap_set_advertising_data() 0x%02x\r\n", ret);
+      return ret;
+    }*/
+
+  //ConfigureAdvertising(FALSE);
+
   aci_hal_read_config_data(0x80, &addr_len, address);
   //PRINTF("Static random address: ");
   //PRINT_ADDRESS(address);

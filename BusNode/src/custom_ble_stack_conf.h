@@ -73,7 +73,7 @@
 #define SECURE_CONNECTIONS_ENABLED                (0U) 
 #define CONTROLLER_DATA_LENGTH_EXTENSION_ENABLED  (1U) 
 #define CONTROLLER_2M_CODED_PHY_ENABLED           (0U)
-#define CONTROLLER_EXT_ADV_SCAN_ENABLED           (0U) 
+#define CONTROLLER_EXT_ADV_SCAN_ENABLED           (1U)
 #define L2CAP_COS_ENABLED                         (0U) 
 #define CONTROLLER_PERIODIC_ADV_ENABLED           (0U) 
 #define CONTROLLER_CTE_ENABLED                    (0U)
