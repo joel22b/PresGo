@@ -3,6 +3,7 @@
 """ Positioning visualizer tool """
 
 import argparse
+from datetime import datetime
 import json
 import os
 import paho.mqtt.client as mqtt
@@ -16,14 +17,19 @@ import threading
 from threading import Event
 import time
 import tkinter
+from uuid import UUID
+
+import protocol_serial as ps
 
 MAX_NUM_TAGS = 300
 
 DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "../bt_host_positioning/config/positioning_config.json")
 DEFAULT_CONNECTION = {"host": "localhost", "port": 1883}
 
+in_cylinder = {}
 close_event = Event()
 running = True
+ptSerial = None
 
 
 class Visualizer(object):
@@ -96,6 +102,7 @@ class Visualizer(object):
 def signal_handler(sig, frame):
   global running
   running = False
+  ptSerial.running = False
   close_event.set()
 
 
@@ -104,19 +111,6 @@ def check_close_event():
     root.destroy()
   else:
     root.after(100, check_close_event)
-
-
-def read_from_serial_port(ser):
-  while running:
-    read_data = ser.readline().decode().rstrip().replace("\r", "")
-    if read_data: 
-      print(f"Received: {read_data}")
-
-
-def write_to_serial_port(ser):
-  while running:
-    ser.write("Hello from Raspberry Pi\n".encode())
-    time.sleep(2)
 
 
 def setup_gui():
@@ -179,22 +173,32 @@ def on_message(client, userdata, msg):
 
   if m is not None:
     entry = json.loads(msg.payload)
-    #entry["tag_id"] = m.group("tag_id")
-    #userdata.q_pos.put(entry)
-    #print(entry)
-    is_in_cylinder = userdata.is_point_inside_cylinder(entry["x"], entry["y"], entry["z"], 1, 10)
-    gui_str = "tag in cylinder: {}".format(is_in_cylinder)
+    is_tag_in_cylinder = userdata.is_point_inside_cylinder(entry["x"], entry["y"], entry["z"], 1, 10) #move out of vis and remove vis??
+    tag_id = m.group("tag_id").replace("ble-pd-", "")
+
+    # later add a last seen time and maybe last initial time of entering the cylinder
+    in_cylinder[tag_id] = is_tag_in_cylinder
+
+    gui_str = "tag in cylinder: {}".format(is_tag_in_cylinder)
     canvas.itemconfig(gui_text, text=gui_str)
-  else:
-    return
-    print("msg payload", msg.payload.decode('utf-8'))
-    m = re.match(r"silabs/aoa/angle/(?P<loc_id>.+)/(?P<tag_id>.+)", msg.topic)
-    if m is not None:
-      entry = json.loads(msg.payload)
-      print(entry)
-      entry["loc_id"] = m.group("loc_id")
-      entry["tag_id"] = m.group("tag_id")
-      userdata.q_ang.put(entry)
+
+
+def get_fare_id(uuid: UUID):
+  print("Fare ID: " + str(uuid))
+
+def get_distance(distance: int):
+  print("Distance: " + str(distance))
+
+def get_door(inDoorway: bool):
+  print("inDoorway: " + str(inDoorway))
+
+def door_announcement(inDoorway: bool):
+  print("Announcement inDoorway: " + str(inDoorway))
+  if inDoorway:
+    for id, is_tag_in_cylinder in in_cylinder.items(): #later check timings
+      if is_tag_in_cylinder:
+        ptSerial.send_request_fare(id, get_fare_id)
+        break
 
 
 def main():
@@ -205,20 +209,20 @@ def main():
   setup_gui()
 
   # mqtt operations on separate thread to not block main gui thread
-  #thread_mqtt = threading.Thread(target=setup_mqtt, daemon=True)
-  #thread_mqtt.start()
+  thread_mqtt = threading.Thread(target=setup_mqtt, daemon=True)
+  thread_mqtt.start()
 
-  # setup serial port for communicating with bluenrg board
-  # /dev/ttyACM0 if plugged in before or without antenna array, else /dev/ttyACM1
-  ser = serial.Serial(port='/dev/ttyACM0', baudrate=115200, timeout=10)
+  global ptSerial
+  ptSerial = ps.ProtocolSerial(door_announcement)
 
-  # serial read on separate thread to not block main gui thread
-  thread_ser_read = threading.Thread(target=read_from_serial_port, daemon=True, args=(ser,))
-  thread_ser_read.start()
+  # time.sleep(2)
+  # ptSerial.send_request_fare("0C4314F4627F", get_fare_id)
+  # ptSerial.send_request_dist(get_distance)
+  # ptSerial.send_request_door(get_door)
 
-  # serial write on separate thread to not block main gui thread
-  thread_ser_write = threading.Thread(target=write_to_serial_port, daemon=True, args=(ser,))
-  thread_ser_write.start()
+  # while running: 
+  #   continue
+  # # ptSerial.serial_read()
 
   # GUI blocking loop
   root.mainloop()
