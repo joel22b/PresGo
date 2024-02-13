@@ -36,6 +36,7 @@
 #include "sl_simple_led_instances.h"
 #include "state_machine/state_machine.h"
 #include "bt_controller/bt_controller.h"
+#include "fare_fob/fare_fob.h"
 
 #define EM_EVENT_MASK_ALL      (  SL_POWER_MANAGER_EVENT_TRANSITION_ENTERING_EM0 \
                                 | SL_POWER_MANAGER_EVENT_TRANSITION_LEAVING_EM0  \
@@ -75,6 +76,8 @@ SL_WEAK void app_init(void)
   //sl_power_manager_subscribe_em_transition_event(&power_transition_log_event_handle, &power_transition_log_event_info);
 
   sm_init();
+
+  ff_init();
 }
 
 /**************************************************************************//**
