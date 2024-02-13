@@ -31,10 +31,11 @@ Middlewares/NVM \
 Middlewares/PKA \
 Middlewares/Profiles \
 Middlewares/RNG \
-src \
 src/btc_controller \
 src/distance_sensor/core \
 src/distance_sensor \
 src/distance_sensor/platform \
+src \
 src/protocol_serial \
+src/rf_device \
 

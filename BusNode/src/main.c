@@ -208,9 +208,9 @@ A serial terminal can be opened on the associated COM port to show log from the 
 /** \cond DOXYGEN_SHOULD_SKIP_THIS
  */
 /* Includes ------------------------------------------------------------------*/
+#include <rf_device/rf_device_it.h>
 #include <stdio.h>
 #include <string.h>
-#include "rf_device_it.h"
 #include "rf_driver_hal.h"
 #include "ble_const.h" 
 #include "bluenrg_lp_stack.h"
@@ -334,22 +334,11 @@ void ModulesTick(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
 
-  //ds_init();
+  ds_init();
 
   BSP_PB_Init(BSP_PUSH1, BUTTON_MODE_EXTI);
   BSP_PB_Init(BSP_PUSH2, BUTTON_MODE_EXTI);
   BSP_LED_Init(BSP_LED3);
-
-  PRINTF("\r\nBlueNRG-LP BLE Multiple Connection demo: ");
-#if PROFILE_ROLE == ROLE_NODE
-  PRINTF("Node (Slave)\r\n");
-#elif PROFILE_ROLE == ROLE_COLLECTOR
-  PRINTF("Collector (MasterSlave)\r\n");
-#elif PROFILE_ROLE == ROLE_INQUIRER
-  PRINTF("Inquirer (Master)\r\n");
-#else
-#error define PROFILE_ROLE
-#endif
 
   /* Init Device */
   ret = DeviceInit();
@@ -358,12 +347,10 @@ void ModulesTick(void)
     while(1);
   }
   
-  PRINTF("BLE Stack Initialized \n");
-  
   ps_init();
   btc_init();
 
-  printf("Hello world!\n\r");
+  PRINTF("Initialization Finished\n\r");
 
   while(1) {
     
@@ -374,7 +361,7 @@ void ModulesTick(void)
     
     ps_process();
 
-    //ds_tick();
+    ds_tick();
 
     /* Request to go to sleep */
     HAL_PWR_MNGR_Request(POWER_SAVE_LEVEL_RUNNING, wakeupIO, &stopLevel);

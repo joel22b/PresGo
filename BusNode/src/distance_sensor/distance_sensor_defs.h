@@ -43,4 +43,7 @@
 #endif /* STEVAL_IDB012V1   */
 
 
+#define DS_MODEL_ID		0xEA
+#define DS_MODULE_TYPE	0xCC
+
 #define DS_DISTANCE_IN_DOORWAY_THESHOLD	500

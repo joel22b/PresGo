@@ -20,7 +20,7 @@
 */
 
 /* Includes ------------------------------------------------------------------*/
-#include "rf_device_it.h"
+#include <rf_device/rf_device_it.h>
 #include "ble_const.h"
 #include "bluenrg_lp_stack.h"
 #include "bluenrg_lp_evb_com.h"
@@ -204,9 +204,9 @@ void BLE_RXTX_SEQ_IRQHandler(void)
   */
 void I2Cx_IRQHandler(void)
 {
-  HAL_I2C_EV_IRQHandler(ds_get_i2c_handler());
+  HAL_I2C_EV_IRQHandler(ds_get_i2c_handle());
 
-  HAL_I2C_ER_IRQHandler(ds_get_i2c_handler());
+  HAL_I2C_ER_IRQHandler(ds_get_i2c_handle());
 
 }
 

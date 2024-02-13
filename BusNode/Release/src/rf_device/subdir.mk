@@ -4,17 +4,20 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/btc_controller/btc_controller.c 
+../src/rf_device/rf_device_hal_msp.c \
+../src/rf_device/rf_device_it.c 
 
 OBJS += \
-./src/btc_controller/btc_controller.o 
+./src/rf_device/rf_device_hal_msp.o \
+./src/rf_device/rf_device_it.o 
 
 C_DEPS += \
-./src/btc_controller/btc_controller.d 
+./src/rf_device/rf_device_hal_msp.d \
+./src/rf_device/rf_device_it.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-src/btc_controller/%.o: ../src/btc_controller/%.c
+src/rf_device/%.o: ../src/rf_device/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
 	@echo $(PWD)

@@ -8,6 +8,7 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include src/rf_device/subdir.mk
 -include src/protocol_serial/subdir.mk
 -include src/distance_sensor/platform/subdir.mk
 -include src/distance_sensor/core/subdir.mk

@@ -140,6 +140,8 @@
                                     <listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/protocol_serial&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;C:\ST\BlueNRG-LP_LPS DK 1.4.0\Middlewares\ST\hal\Inc&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;${ProjDirPath}/src/rf_device&quot;"/>
                                     								
                                 </option>
                                 								

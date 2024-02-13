@@ -52,7 +52,7 @@ int I2CWrite(I2C_HandleTypeDef* hi2cx, uint16_t Dev, uint8_t *pdata, uint32_t co
 
     status = HAL_I2C_Master_Transmit(hi2cx, Dev, pdata, count, i2c_time_out);
     if (status) {
-    	printf("ERROR: Failed to write, status=0x%02X\n\r", status);
+    	//printf("ERROR: Failed to write, status=0x%02X\n\r", status);
     }
     return status;
 }
@@ -63,7 +63,7 @@ int I2CRead(I2C_HandleTypeDef* hi2cx, uint16_t Dev, uint8_t *pdata, uint32_t cou
 
     status = HAL_I2C_Master_Receive(hi2cx, Dev|1, pdata, count, i2c_time_out);
     if (status) {
-    	printf("ERROR: Failed to read, status=0x%02X\n\r", status);
+    	//printf("ERROR: Failed to read, status=0x%02X\n\r", status);
     }
     return status;
 }
@@ -172,13 +172,13 @@ int8_t VL53L1_RdByte(I2C_HandleTypeDef* hi2cx, uint16_t dev, uint16_t index, uin
 	    VL53L1_GetI2cBus();
 	    status_int = I2CWrite(hi2cx, 0x52, _I2CBuffer, 2);
 	    if( status_int ){
-	    	printf("Failed %02X\n\r", status_int);
+	    	//printf("Failed %02X\n\r", status_int);
 	        Status = -1;
 	        goto done;
 	    }
 	    status_int = I2CRead(hi2cx, 0x52, data, 1);
 	    if (status_int != 0) {
-	    	printf("Failed %02X\n\r", status_int);
+	    	//printf("Failed %02X\n\r", status_int);
 	        Status = -1;
 	    }
 	done:
