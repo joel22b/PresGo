@@ -98,6 +98,7 @@ sl_status_t cte_bt_on_event_conn(sl_bt_msg_t *evt)
     // -------------------------------
     case sl_bt_evt_scanner_scan_report_id:
     {
+        
       // Check if the tag is allowlisted.
       if (SL_STATUS_NOT_FOUND == aoa_db_allowlist_find(evt->data.evt_scanner_scan_report.address.addr)) {
         break;

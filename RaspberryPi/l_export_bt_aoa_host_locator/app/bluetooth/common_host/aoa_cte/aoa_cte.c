@@ -72,20 +72,22 @@ sl_status_t aoa_cte_bt_on_event(sl_bt_msg_t *evt)
       return sc;
     }
   }
-
-  switch (cte_mode) {
-    case AOA_CTE_TYPE_SILABS:
+  //sc = cte_bt_on_event_conn_less(evt);
+  //switch (cte_mode) {
+  //  case AOA_CTE_TYPE_SILABS:
       sc = cte_bt_on_event_silabs(evt);
-      break;
-    case AOA_CTE_TYPE_CONN_LESS:
+
+  //    break;
+  //  case AOA_CTE_TYPE_CONN_LESS:
       sc = cte_bt_on_event_conn_less(evt);
-      break;
-    case AOA_CTE_TYPE_CONN:
-      sc = cte_bt_on_event_conn(evt);
-      break;
-    default:
-      break;
-  }
+      
+  //    break;
+  //  case AOA_CTE_TYPE_CONN:
+  //    sc = cte_bt_on_event_conn(evt);
+  //    break;
+  //  default:
+  //    break;
+  //}
 
   return sc;
 }

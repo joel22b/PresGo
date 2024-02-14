@@ -48,18 +48,19 @@ sl_status_t cte_bt_on_event_silabs(sl_bt_msg_t *evt)
   aoa_iq_report_t iq_report;
 
   switch (SL_BT_MSG_ID(evt->header)) {
+    
     // -------------------------------
     // This event indicates the device has started and the radio is ready.
     // Do not call any stack command before receiving this boot event!
     case sl_bt_evt_system_boot_id:
       // Config the NCP on the target.
       // Filter out the scan response event
-      user_data[0] = SL_NCP_EVT_FILTER_CMD_ADD_ID;
-      event = sl_bt_evt_scanner_scan_report_id;
-      memcpy(&user_data[1], &event, SL_NCP_EVT_FILTER_CMD_ADD_LEN - 1);
+      // user_data[0] = SL_NCP_EVT_FILTER_CMD_ADD_ID;
+      // event = sl_bt_evt_scanner_scan_report_id;
+      // memcpy(&user_data[1], &event, SL_NCP_EVT_FILTER_CMD_ADD_LEN - 1);
 
-      sc = sl_bt_user_manage_event_filter(SL_NCP_EVT_FILTER_CMD_ADD_LEN,
-                                          user_data);
+      // sc = sl_bt_user_manage_event_filter(SL_NCP_EVT_FILTER_CMD_ADD_LEN,
+      //                                     user_data);
       if (SL_STATUS_OK != sc) {
         break;
       }
@@ -127,8 +128,12 @@ sl_status_t cte_bt_on_event_silabs(sl_bt_msg_t *evt)
     }
     break;
 
+   
     // -------------------------------
     // Default event handler.
+    case sl_bt_evt_scanner_scan_report_id:
+      //printf("Got Scanner report\n\r");
+      break;
     default:
       break;
   }

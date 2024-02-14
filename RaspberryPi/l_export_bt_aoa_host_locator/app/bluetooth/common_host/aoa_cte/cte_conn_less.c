@@ -28,12 +28,13 @@
  *
  ******************************************************************************/
 
+#include "stdint.h"
 #include "sl_bt_api.h"
 #include "aoa_cte.h"
 #include "aoa_util.h"
 #include "aoa_cte_config.h"
 #include "app_log.h"
-
+#include "sl_ncp_evt_filter_common.h"
 // Module shared variables.
 extern uint8_t cte_switch_pattern[ANTENNA_ARRAY_MAX_PIN_PATTERN_SIZE];
 extern uint8_t cte_switch_pattern_size;
@@ -49,13 +50,18 @@ sl_status_t cte_bt_on_event_conn_less(sl_bt_msg_t *evt)
   sl_status_t sc = SL_STATUS_OK;
   aoa_db_entry_t *tag;
 
+  uint8_t user_data[SL_NCP_EVT_FILTER_CMD_ADD_LEN];
+  uint32_t event;
+  
+  aoa_iq_report_t iq_report;
+
   switch (SL_BT_MSG_ID(evt->header)) {
     // -------------------------------
     // This event indicates the device has started and the radio is ready.
     // Do not call any stack command before receiving this boot event!
     case sl_bt_evt_system_boot_id:
       // Set passive scanning on 1M PHY
-      sc = sl_bt_scanner_set_mode(sl_bt_gap_1m_phy, AOA_CTE_SCAN_MODE);
+      /*sc = sl_bt_scanner_set_mode(sl_bt_gap_1m_phy, AOA_CTE_SCAN_MODE);
       if (SL_STATUS_OK != sc) {
         break;
       }
@@ -67,14 +73,30 @@ sl_status_t cte_bt_on_event_conn_less(sl_bt_msg_t *evt)
       }
 
       // Start scanning - looking for tags
-      sc = sl_bt_scanner_start(sl_bt_gap_1m_phy, sl_bt_scanner_discover_generic);
+      sc = sl_bt_scanner_start(sl_bt_gap_1m_phy, sl_bt_scanner_discover_generic);*/
       break;
 
     // -------------------------------
     case sl_bt_evt_scanner_scan_report_id:
     {
       // Check if the tag is allowlisted.
+      uint8_t addr[] = {0x66, 0x77, 0x88, 0xE1, 0x80, 0x02};
+      uint8_t match = 1;
+      for (uint8_t i = 0; i < 6; i++) {
+        if (evt->data.evt_scanner_scan_report.address.addr[i] != addr[i]) {
+          match = 0;
+          break;
+        }
+      }
+      if (!match) {
+        break;
+      }
+
+      //printf("SCAN REPORT");
+      //printf("%02X %02X %02X %02X %02X %02X\n\r", evt->data.evt_scanner_scan_report.address.addr[0],evt->data.evt_scanner_scan_report.address.addr[1],evt->data.evt_scanner_scan_report.address.addr[2],evt->data.evt_scanner_scan_report.address.addr[3],evt->data.evt_scanner_scan_report.address.addr[4],evt->data.evt_scanner_scan_report.address.addr[5]);
+
       if (SL_STATUS_NOT_FOUND == aoa_db_allowlist_find(evt->data.evt_scanner_scan_report.address.addr)) {
+        printf("not found in allowlist \r\n");
         break;
       }
 
@@ -86,11 +108,13 @@ sl_status_t cte_bt_on_event_conn_less(sl_bt_msg_t *evt)
       // point, and sync open command is sent multiple times in a row.
       // This is normal and shouldn't cause any issues.
       if (SL_STATUS_OK == aoa_db_get_tag_by_address(&evt->data.evt_scanner_scan_report.address, &tag)) {
+        //printf("tag found in db\r\n");
         break;
       }
 
       // Check for extended advertisement packet.
       if ((evt->data.evt_scanner_scan_report.packet_type & 0x80) == 0) {
+        //printf("extended adv\r\n");
         break;
       }
 
@@ -99,6 +123,9 @@ sl_status_t cte_bt_on_event_conn_less(sl_bt_msg_t *evt)
                                          evt->data.evt_scanner_scan_report.data.len,
                                          cte_service,
                                          sizeof(cte_service))) {
+
+        
+        //printf("CTE service not found\r\n");
         break;
       }
 
@@ -114,10 +141,46 @@ sl_status_t cte_bt_on_event_conn_less(sl_bt_msg_t *evt)
       }
       break;
     }
+    /*case sl_bt_evt_cte_receiver_silabs_iq_report_id:
+    {
+     
+      if (evt->data.evt_cte_receiver_silabs_iq_report.samples.len == 0) {
+        // Nothing to be processed.
+        break;
+      }
 
+      // Check if the tag is allowlisted.
+      if (SL_STATUS_NOT_FOUND == aoa_db_allowlist_find(evt->data.evt_cte_receiver_silabs_iq_report.address.addr)) {
+        // Tag is not on the allowlist, ignoring. Not an error.
+        break;
+      }
+
+      // Look for this tag.
+      sc = aoa_db_get_tag_by_address(&evt->data.evt_cte_receiver_silabs_iq_report.address, &tag);
+      // Check if it is a new tag
+      if (sc == SL_STATUS_NOT_FOUND) {
+        sc = aoa_db_add_tag(0,
+                            &evt->data.evt_cte_receiver_silabs_iq_report.address,
+                            evt->data.evt_cte_receiver_silabs_iq_report.address_type,
+                            &tag);
+        if (SL_STATUS_OK != sc) {
+          break;
+        }
+      }
+
+      // Convert event to common IQ report format.
+      iq_report.channel = evt->data.evt_cte_receiver_silabs_iq_report.channel;
+      iq_report.rssi = evt->data.evt_cte_receiver_silabs_iq_report.rssi;
+      iq_report.event_counter = evt->data.evt_cte_receiver_silabs_iq_report.packet_counter;
+      iq_report.length = evt->data.evt_cte_receiver_silabs_iq_report.samples.len;
+      iq_report.samples = (int8_t *)evt->data.evt_cte_receiver_silabs_iq_report.samples.data;
+
+      aoa_cte_on_iq_report(tag, &iq_report);
+    }*/
     // -------------------------------
     case sl_bt_evt_sync_opened_id:
     {
+      //printf("SYNC");
       // Add connection to the asset tag database.
       sc = aoa_db_add_tag(evt->data.evt_sync_opened.sync,
                           &evt->data.evt_sync_opened.address,
@@ -162,6 +225,7 @@ sl_status_t cte_bt_on_event_conn_less(sl_bt_msg_t *evt)
     // -------------------------------
     case sl_bt_evt_cte_receiver_connectionless_iq_report_id:
     {
+      //printf("CONNECTIONLESS EVENT");
       aoa_iq_report_t iq_report;
 
       if (evt->data.evt_cte_receiver_connectionless_iq_report.samples.len == 0) {
