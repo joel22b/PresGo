@@ -20,6 +20,9 @@ void btc_connect_start(uint16_t connection, uint8_t* addr);
 void btc_connect_set_rx(uint16_t connection, uint16_t rxHandle);
 void btc_connect_finish(uint16_t connection);
 void btc_connect_disconnect(uint16_t connection);
+void btc_connect_failure(uint16_t connection);
+
+void btc_connect_timeout(void* data);
 
 void btc_connect_tx_request(uint16_t connection, pt_req_t reqType);
 

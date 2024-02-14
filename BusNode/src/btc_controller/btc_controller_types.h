@@ -10,8 +10,12 @@
 
 #include "stdint.h"
 
+#include "rf_driver_hal_vtimer.h"
+
 #define BTC_ADDRESS_LEN 6
 #define BTC_CONNECTIONS_NUM 4
+
+static const uint8_t BTC_UUID_ERROR[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 typedef enum {
   btc_connect_state_unknown 		= 0x00,
@@ -27,6 +31,7 @@ struct btc_connection {
 	uint8_t reqId;
 	uint16_t connection;
 	uint16_t rx;
+	VTIMER_HandleType timer;
 };
 typedef struct btc_connection btc_connection_t;
 

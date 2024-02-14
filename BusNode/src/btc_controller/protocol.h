@@ -15,6 +15,7 @@
 typedef enum {
   pt_req_none = 0x00,
   pt_req_fare_id = 0x01,
+  pt_req_done = 0x02,
 } pt_req_t;
 
 #define pt_msg_req_type 0x00001000

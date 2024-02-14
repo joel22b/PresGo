@@ -8,10 +8,13 @@
 #ifndef BT_CONTROLLER_TYPES_H_
 #define BT_CONTROLLER_TYPES_H_
 
+#include "fare_fob/config.h"
+
 struct btc_connect_handle {
   uint32_t service;   // Service handle
   uint16_t tx;        // TX Characteristic handle
   uint16_t rx;        // RX Characteristic handle
+  uint8_t address[ADDRESS_LEN];
 };
 typedef struct btc_connect_handle btc_connect_handle_t;
 

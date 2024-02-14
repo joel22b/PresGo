@@ -27,6 +27,7 @@
 #include "gap_profile.h"
 
 #include "btc_controller.h"
+#include "config.h"
 
 /* External variables --------------------------------------------------------*/
 
@@ -211,7 +212,7 @@ uint8_t DeviceInit(void)
   
   uint8_t addr_len;
   //uint8_t address[6];
-  uint8_t address[CONFIG_DATA_PUBADDR_LEN] = {0x66,0x77,0x88,0xE1,0x80,0x02};
+  uint8_t address[CONFIG_DATA_PUBADDR_LEN] = BTC_ADDRESS;//{0x66,0x77,0x88,0xE1,0x80,0x02};
 
   aci_hal_write_config_data(CONFIG_DATA_PUBADDR_OFFSET, CONFIG_DATA_PUBADDR_LEN, address);
 
@@ -290,10 +291,10 @@ uint8_t DeviceInit(void)
 
   //ConfigureAdvertising(FALSE);
 
-  aci_hal_read_config_data(0x80, &addr_len, address);
-  //PRINTF("Static random address: ");
-  //PRINT_ADDRESS(address);
-  //PRINTF("\r\n");
+  aci_hal_read_config_data(CONFIG_DATA_PUBADDR_OFFSET/*0x80*/, &addr_len, address);
+  PRINTF("Static random address: ");
+  PRINT_ADDRESS(address);
+  PRINTF("\r\n");
 
  /* Set the device name */
   ret = Gap_profile_set_dev_name(0, strlen(name), (uint8_t *)name);
