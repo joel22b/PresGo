@@ -35,6 +35,10 @@ void btc_connect_init() {
   }
 }
 
+uint8_t* btc_connect_get_address(uint8_t connection) {
+  return connections[connection].address;
+}
+
 void
 btc_connect_openned (sl_bt_evt_connection_opened_t *evt_connect_openned)
 {
@@ -58,6 +62,10 @@ btc_connect_openned (sl_bt_evt_connection_opened_t *evt_connect_openned)
       btc_adv_start(btc_adv_services_legacy);
       app_log_info("Continue advertising\n\r");
     }
+
+  for (uint8_t i = 0; i < ADDRESS_LEN; i++) {
+      connections[evt_connect_openned->connection].address[i] = evt_connect_openned->address.addr[i];
+  }
 }
 
 void
@@ -148,4 +156,12 @@ void btc_connect_rx_data(sl_bt_evt_gatt_server_user_write_request_t* evt_write_r
   }
 
   ff_rx_data(evt_write_request->connection, &evt_write_request->value);
+}
+
+void btc_connect_disconnect(uint8_t connection) {
+  sl_status_t ret_val = sl_bt_connection_close(connection);
+  if (ret_val != SL_STATUS_OK) {
+      app_log_info("Failed to disconnect from connection 0x%02X ret_val=0x%02X\n\r",
+                   connection, ret_val);
+  }
 }

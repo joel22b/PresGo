@@ -10,6 +10,9 @@
 #include "app_log.h"
 
 #include "config.h"
+#ifndef DEBUG_NO_RECENT_BUS
+#include "recent_bus.h"
+#endif
 #include "bt_controller/bt_controller.h"
 
 /* =============================
@@ -24,6 +27,10 @@ void ff_init() {
   for (uint8_t i = 0; i < UUID_LEN; i++) {
       fare_uuid[i] = FARE_DEFAULT_UUID[i];
   }
+
+#ifndef DEBUG_NO_RECENT_BUS
+  rb_init();
+#endif
 }
 
 bool ff_is_bus_adv(sl_bt_evt_scanner_extended_advertisement_report_t *report)
@@ -33,7 +40,12 @@ bool ff_is_bus_adv(sl_bt_evt_scanner_extended_advertisement_report_t *report)
       return false;
   }
 
-  // TODO: Add Adv SID check
+#ifndef DEBUG_NO_RECENT_BUS
+  // Check if in Recent Bus list
+  if (rb_in_list(report->address.addr)) {
+      return false;
+  }
+#endif
 
   // Check data for Bus identifier
   bool dataStarted = false;
@@ -97,13 +109,25 @@ void ff_msg_req(uint8_t connection, pt_msg_t* msg) {
     case pt_req_fare_id:
       pt_msg_t msg;
       msg.type = pt_msg_fare_id_type;
+      app_log("UUID: ");
       for (uint8_t i = 0; i < UUID_LEN; i++) {
+          app_log("0x%02X ", fare_uuid[i]);
           msg.data.fare_id.uuid[i] = fare_uuid[i];
       }
+      app_log("\n\rDone\n\r");
       sl_status_t ret_val = ff_tx_data(connection, &msg);
       if (ret_val != SL_STATUS_OK) {
           app_log_info("Failed to send fare id message to connection %d: 0x%02X\n\r", connection, ret_val);
       }
+      break;
+
+    case pt_req_done:
+      app_log_info("Received done request\n\r");
+      btc_connect_disconnect(connection);
+
+#ifndef DEBUG_NO_RECENT_BUS
+      rb_add_bus_to_list(btc_connect_get_address(connection));
+#endif
       break;
 
     default:

@@ -10,9 +10,6 @@
 #include "app_log.h"
 
 void btc_handle_event(sl_bt_msg_t *evt) {
-  sl_status_t sc;
-    sl_status_t ret_val;
-
     switch (SL_BT_MSG_ID(evt->header)) {
       // -------------------------------
       // This event indicates the device has started and the radio is ready.

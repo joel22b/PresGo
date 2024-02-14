@@ -19,8 +19,12 @@
  *  Sets the tag to immediately go into
  *  advertising and remain advertising
  *  **BAD BATTERY PERFORMANCE**
+ * DEBUG_NO_RECENT_BUS
+ *  Removed the Recent Bus list
+ *  feature. Good for testing
 ==================================== */
-#define DEBUG_JUST_ADV
+//#define DEBUG_JUST_ADV
+//#define DEBUG_NO_RECENT_BUS
 
 /* ====================================
  * State Machine Timer Durations (in ms)
@@ -65,5 +69,31 @@ static const uint8_t FARE_DEFAULT_UUID[] = {0xAA, 0x22, 0x22, 0x22, 0x22, 0x22, 
  * Generic Configs
 ==================================== */
 #define UUID_LEN 16
+#define ADDRESS_LEN 6
+
+/* =====================================
+ * Recent Bus list
+ *
+ * RB_LIST_LEN
+ *  How many entries fit in the Recent
+ *  Bus list
+ * RB_PERIOD_SEC
+ *  The number of seconds for a period
+ *  in the Recent Bus list
+ * RB_LIST_DURATION_MIN
+ *  The number of minutes a bus should
+ *  remain on the Recent Bus list
+ * RB_PERIOD_MS
+ *  Converts RB_PERIOD_SEC to
+ *  milliseconds **DO NOT CHANGE**
+ * RB_LIST_DURATION_PERIODS
+ *  Converts RB_LIST_DURATION_MIN to
+ *  a number of periods **DO NOT CHANGE**
+===================================== */
+#define RB_LIST_LEN               4
+#define RB_PERIOD_SEC             30  // 30 seconds
+#define RB_LIST_DURATION_MIN      90  // 1.5 hours
+#define RB_PERIOD_MS              RB_PERIOD_SEC*1000
+#define RB_LIST_DURATION_PERIODS  (60/RB_PERIOD_SEC)*RB_LIST_DURATION_MIN
 
 #endif /* CONFIG_H_ */
