@@ -169,7 +169,7 @@ bool find_service_in_advertisement(uint8_t *adv_data,
   uint32_t i = 0;
   uint32_t next_ad_structure;
   bool ret = false;
-
+  //printf("UUID LENGTH: %20X \r\n", uuid_len);
   if ((uuid_len == 2) || (uuid_len == 16)) {
     // Incomplete List of 16 or 128-bit  Service Class UUIDs.
     incomplete_list = (uuid_len == 2) ? 0x02 : 0x06;
@@ -184,14 +184,17 @@ bool find_service_in_advertisement(uint8_t *adv_data,
       // Find AD types of interest.
       if (ad_field_type == incomplete_list || ad_field_type == complete_list) {
         // Compare each UUID to the service UUID to be found.
+        //printf("UUID FIELD: ");
         for (ad_uuid_field = adv_data + i + 2;
              ad_uuid_field < adv_data + next_ad_structure;
              ad_uuid_field += uuid_len) {
+          //printf("%02X", ad_uuid_field[0]);
           if (memcmp(ad_uuid_field, uuid, uuid_len) == 0) {
             ret = true;
             break;
           }
         }
+        //printf("\r\n");
         if (ret == true) {
           break;
         }
