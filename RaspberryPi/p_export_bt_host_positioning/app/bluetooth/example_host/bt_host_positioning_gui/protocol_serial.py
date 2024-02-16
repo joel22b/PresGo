@@ -17,7 +17,7 @@ class ProtocolSerial:
         self.callbackAnnouncementDoor = callbackAnnouncementDoor
         # setup serial port for communicating with bluenrg board
         # /dev/ttyACM0 if plugged in before or without antenna array, else /dev/ttyACM1
-        self.serialPort = serial.Serial(port='/dev/ttyACM1', baudrate=115200, timeout=10)
+        self.serialPort = serial.Serial(port='COM5', baudrate=115200, timeout=10)
 
         # serial read on separate thread to not block main gui thread
         thread_ser_read = threading.Thread(target=self.serial_read_thread, daemon=True, args=())
@@ -32,8 +32,8 @@ class ProtocolSerial:
             read_data = self.serialPort.readline()
             if read_data: 
                 cmd = read_data.decode().rstrip().replace("\r", "")
+                print(f"Received: {cmd}")
                 self.decode_message(cmd)
-                #print(f"Received: {cmd}")
 
     def serial_write(self, msg: psm.Message):
         #while self.running:
