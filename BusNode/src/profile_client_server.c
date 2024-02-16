@@ -212,9 +212,9 @@ uint8_t DeviceInit(void)
   
   uint8_t addr_len;
   //uint8_t address[6];
-  uint8_t address[CONFIG_DATA_PUBADDR_LEN] = BTC_ADDRESS;//{0x66,0x77,0x88,0xE1,0x80,0x02};
+  //uint8_t address[CONFIG_DATA_PUBADDR_LEN] = BTC_ADDRESS;//{0x66,0x77,0x88,0xE1,0x80,0x02};
 
-  aci_hal_write_config_data(CONFIG_DATA_PUBADDR_OFFSET, CONFIG_DATA_PUBADDR_LEN, address);
+  //aci_hal_write_config_data(CONFIG_DATA_PUBADDR_OFFSET, CONFIG_DATA_PUBADDR_LEN, address);
 
   /* Set the TX power to 0 dBm */
   aci_hal_set_tx_power_level(0, 24);
@@ -291,19 +291,19 @@ uint8_t DeviceInit(void)
 
   //ConfigureAdvertising(FALSE);
 
-  aci_hal_read_config_data(CONFIG_DATA_PUBADDR_OFFSET/*0x80*/, &addr_len, address);
-  PRINTF("Static random address: ");
-  PRINT_ADDRESS(address);
-  PRINTF("\r\n");
+  //aci_hal_read_config_data(CONFIG_DATA_PUBADDR_OFFSET/*0x80*/, &addr_len, address);
+  //PRINTF("Static random address: ");
+  //PRINT_ADDRESS(address);
+  //PRINTF("\r\n");
 
  /* Set the device name */
-  ret = Gap_profile_set_dev_name(0, strlen(name), (uint8_t *)name);
-  if (ret != BLE_STATUS_SUCCESS) {
-    PRINTF ("Error in Gap_profile_set_dev_name 0x%02x\r\n", ret);
-    return ret;
-  } else {
+  //ret = Gap_profile_set_dev_name(0, strlen(name), (uint8_t *)name);
+  //if (ret != BLE_STATUS_SUCCESS) {
+  //  PRINTF ("Error in Gap_profile_set_dev_name 0x%02x\r\n", ret);
+  //  return ret;
+  //} else {
     //PRINTF ("Gap_profile_set_dev_name() --> SUCCESS\r\n");
-  }
+  //}
   
   aci_gap_set_io_capability(IO_CAP_NO_INPUT_NO_OUTPUT);
   
@@ -760,7 +760,7 @@ void aci_gap_proc_complete_event(uint8_t Procedure_Code,
   //printf("aci_gap_proc_complete_event\n\r");
 }
 
-void hci_le_connection_complete_event(uint8_t Status,
+/*void hci_le_connection_complete_event(uint8_t Status,
                                       uint16_t Connection_Handle,
                                       uint8_t Role,
                                       uint8_t Peer_Address_Type,
@@ -866,7 +866,7 @@ void hci_le_connection_complete_event(uint8_t Status,
      PRINTF_DBG2("Connection canceled.\r\n");
    }
 
-}/* end hci_le_connection_complete_event() */
+}
 
 
 void hci_le_enhanced_connection_complete_event(uint8_t Status,
@@ -891,9 +891,9 @@ void hci_le_enhanced_connection_complete_event(uint8_t Status,
                                    Conn_Latency,
                                    Supervision_Timeout,
                                    Master_Clock_Accuracy);
-}
+}*/
 
-void hci_disconnection_complete_event(uint8_t Status,
+/*void hci_disconnection_complete_event(uint8_t Status,
                                       uint16_t Connection_Handle,
                                       uint8_t Reason)
 {
@@ -905,7 +905,7 @@ void hci_disconnection_complete_event(uint8_t Status,
     return;
   }
 
-  btc_connect_disconnect(Connection_Handle);
+  //btc_connect_disconnect(Connection_Handle);
     
   i = get_slave_index_from_conn_handle(Connection_Handle);
   
@@ -988,7 +988,7 @@ void hci_disconnection_complete_event(uint8_t Status,
   }
 #endif
   
-}/* end hci_disconnection_complete_event() */
+}*/
 
 void aci_gap_pairing_complete_event(uint16_t Connection_Handle,
                                     uint8_t Status,
@@ -1062,7 +1062,7 @@ void aci_gap_pairing_complete_event(uint16_t Connection_Handle,
   aci_gap_configure_white_and_resolving_list(0x01);
 }
 
-void aci_gatt_clt_notification_event(uint16_t Connection_Handle,
+/*void aci_gatt_clt_notification_event(uint16_t Connection_Handle,
                                  uint16_t Attribute_Handle,
                                  uint16_t Attribute_Value_Length,
                                  uint8_t Attribute_Value[])
@@ -1077,7 +1077,7 @@ void aci_gatt_clt_notification_event(uint16_t Connection_Handle,
  
   if(Attribute_Handle == slaves[i].tx_handle + 1)
   {
-	  btc_connect_rx_data(Connection_Handle, Attribute_Value, Attribute_Value_Length);
+	  //btc_connect_rx_data(Connection_Handle, Attribute_Value, Attribute_Value_Length);
     //uint32_t counter;
     
     //counter = LE_TO_HOST_32(Attribute_Value);
@@ -1085,7 +1085,7 @@ void aci_gatt_clt_notification_event(uint16_t Connection_Handle,
     //PRINTF("Notification from server %d: %d (%d bytes)\n\r", i, counter, Attribute_Value_Length);
     
   }  
-}
+}*/
 #if MAX_NUM_MASTERS
 
 void aci_gatt_srv_write_event(uint16_t Connection_Handle,
@@ -1122,7 +1122,7 @@ void aci_gatt_srv_write_event(uint16_t Connection_Handle,
 
 #endif
                                                                                               
-void aci_att_clt_read_by_group_type_resp_event(uint16_t Connection_Handle,
+/*void aci_att_clt_read_by_group_type_resp_event(uint16_t Connection_Handle,
                                            uint8_t Attribute_Data_Length,
                                            uint16_t Data_Length,
                                            uint8_t Attribute_Data_List[])
@@ -1153,7 +1153,7 @@ void aci_att_clt_read_by_group_type_resp_event(uint16_t Connection_Handle,
 	break;
   }
   
-}
+}*/
 
 void print_uuid(uint8_t *uuid)
 {
@@ -1162,7 +1162,7 @@ void print_uuid(uint8_t *uuid)
   PRINTF("\n\r");
 }
 
-void aci_att_clt_read_by_type_resp_event(uint16_t Connection_Handle,
+/*void aci_att_clt_read_by_type_resp_event(uint16_t Connection_Handle,
                                      uint8_t Handle_Value_Pair_Length,
                                      uint16_t Data_Length,
                                      uint8_t Handle_Value_Pair_Data[])
@@ -1188,7 +1188,7 @@ void aci_att_clt_read_by_type_resp_event(uint16_t Connection_Handle,
         }
         else if(memcmp(&Handle_Value_Pair_Data[i+5], SerialPort_RX_char_uuid, 16) == 0){
           slaves[slave_index].rx_handle = handle;
-          btc_connect_set_rx(Connection_Handle, handle);
+          //btc_connect_set_rx(Connection_Handle, handle);
            //PRINTF("RX Char Handle for slave %d: 0x%04X\r\n", slave_index, handle);
         }
       }
@@ -1197,7 +1197,7 @@ void aci_att_clt_read_by_type_resp_event(uint16_t Connection_Handle,
   default:
     break;
   }
-}
+}*/
 
 #define INSUFFICIENT_ENCRYPTION 0x0F
 
@@ -1223,7 +1223,7 @@ void aci_gatt_clt_error_resp_event(uint16_t Connection_Handle,
   }  
 }
 
-void aci_gatt_clt_proc_complete_event(uint16_t Connection_Handle,
+/*void aci_gatt_clt_proc_complete_event(uint16_t Connection_Handle,
                                   uint8_t Error_Code)
 {
   int i;
@@ -1260,13 +1260,13 @@ void aci_gatt_clt_proc_complete_event(uint16_t Connection_Handle,
     break;
   case ENABLING_TX_CHAR_NOTIFICATIONS:
     //PRINTF("Notifications for TX Charac enabled (0x%04X).\r\n", slaves[i].conn_handle);
-    btc_connect_finish(Connection_Handle);
+    //btc_connect_finish(Connection_Handle);
     slaves[i].state = DONE;
     break;
   default:
 	break;
   }
-}
+}*/
 
 void aci_gatt_tx_pool_available_event(uint16_t Connection_Handle,
                                       uint16_t Available_Buffers)
@@ -1275,7 +1275,7 @@ void aci_gatt_tx_pool_available_event(uint16_t Connection_Handle,
   APP_FLAG_CLEAR(TX_BUFFER_FULL);
 }
 
-void hci_le_advertising_report_event(uint8_t Num_Reports,
+/*void hci_le_advertising_report_event(uint8_t Num_Reports,
                                      Advertising_Report_t Advertising_Report[])
 {
   uint8_t AD_len, AD_type;
@@ -1284,22 +1284,6 @@ void hci_le_advertising_report_event(uint8_t Num_Reports,
   tBleStatus ret;
   //uint8_t address[6] = {0x7F, 0x62, 0xF4, 0x14, 0x43, 0x0C};
   //uint8_t address[6] = {0x21, 0x6B, 0xF4, 0x14, 0x43, 0x0C};
-  
-  /*while(i < Advertising_Report[0].Data_Length){
-    AD_len = Advertising_Report[0].Data[i];
-    AD_type = Advertising_Report[0].Data[i+1];    
-    if(AD_type == AD_TYPE_128_BIT_UUID_SERVICE_DATA){
-      // Search for Serial Port service UUID
-      if(memcmp(&Advertising_Report[0].Data[i+2], SerialPort_service_uuid, sizeof(SerialPort_service_uuid))==0 && Advertising_Report[0].Data[i+18] == SERVICE_DATA_TO_SEARCH_FOR){
-        // Device found!
-        aci_gap_terminate_proc(GAP_GENERAL_CONNECTION_ESTABLISHMENT_PROC);
-        ret = aci_gap_create_connection(LE_1M_PHY_BIT, Advertising_Report[0].Address_Type, Advertising_Report[0].Address);        
-        PRINTF("aci_gap_create_connection %02X\r\n", ret);
-        return;
-      }
-    }
-    i += AD_len+1;
-  }*/
 
   while (i < Num_Reports) {
 	  //PRINT_ADDRESS(Advertising_Report[i].Address);
@@ -1326,7 +1310,7 @@ void hci_le_extended_advertising_report_event(uint8_t Num_Reports,
   Advertising_Report.Data = Extended_Advertising_Report[0].Data;
   Advertising_Report.RSSI = Extended_Advertising_Report[0].RSSI;
   hci_le_advertising_report_event(1, &Advertising_Report);
-}
+}*/
 
 void aci_gap_bond_lost_event(void)
 {  

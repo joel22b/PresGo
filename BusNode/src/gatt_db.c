@@ -97,12 +97,12 @@ uint8_t Add_SerialPort_Service(void)
   TXCharHandle = aci_gatt_srv_get_char_decl_handle((ble_gatt_chr_def_t *)&serial_chars[0]);
   RXCharHandle = aci_gatt_srv_get_char_decl_handle((ble_gatt_chr_def_t *)&serial_chars[1]);
   
-  printf("Serial Port Service added.\nTX Char Handle %04X, RX Char Handle %04X\n",
+  printf("Serial Port Service added: TX Char Handle %04X, RX Char Handle %04X\n\r",
          TXCharHandle, RXCharHandle);
   
   return BLE_STATUS_SUCCESS; 
 
 fail:
-  printf("Error while adding Serial Port service.\n");
+  printf("Error while adding Serial Port service.\n\r");
   return BLE_STATUS_ERROR ;
 }
