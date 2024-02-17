@@ -14,9 +14,11 @@
 #include "bluenrg_lp_stack.h"
 
 void btc_init();
+void btc_tick();
 uint8_t btc_address_match(uint8_t* addr1, uint8_t* addr2);
 
 void btc_connect_init();
+void btc_connect_tick();
 btc_connection_t* btc_connect_get(uint8_t index);
 btc_connection_t* btc_connect_get_connection(uint16_t connection);
 void btc_connect_request(uint8_t reqId, uint8_t* addr);

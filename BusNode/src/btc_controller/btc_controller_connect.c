@@ -11,6 +11,9 @@
 
 static btc_connection_t btc_connections[BTC_CONNECTIONS_NUM];
 
+static uint8_t DEATH_TO_AMERICA = 0;
+static uint16_t DEATH_TO_AMERICA_connection;
+
 void btc_connect_init() {
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		btc_connect_cleanup(&btc_connections[i]);
@@ -62,6 +65,16 @@ void btc_connect_init() {
 	}
 
 	printf("Initialization: BLE Connect complete\n\r");
+}
+
+void btc_connect_tick() {
+	if (DEATH_TO_AMERICA) {
+		tBleStatus ret = hci_disconnect(DEATH_TO_AMERICA_connection, 0);
+		if (ret) {
+			printf("Failed to disconnect: 0x%02X\n\r", ret);
+		}
+		DEATH_TO_AMERICA = 0;
+	}
 }
 
 btc_connection_t* btc_connect_get(uint8_t index) {
@@ -215,10 +228,8 @@ void btc_connect_rx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
 	    case pt_msg_fare_id_type:
 	    	ps_send_rsp_fare(conn->reqId, msg->data.fare_id.uuid);
 	    	//btc_connect_tx_request(conn, pt_req_done);
-	    	tBleStatus ret = hci_disconnect(conn->connection, 0);
-	    	if (ret) {
-	    		printf("Failed to disconnect: 0x%02X\n\r", ret);
-	    	}
+	    	DEATH_TO_AMERICA = 1;
+	    	DEATH_TO_AMERICA_connection = conn->connection;
 	    	break;
 
 	    default:

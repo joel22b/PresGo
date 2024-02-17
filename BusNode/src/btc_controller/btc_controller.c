@@ -33,6 +33,10 @@ void btc_init() {
 	printf("Initialization: BLE complete\n\r");
 }
 
+void btc_tick() {
+	btc_connect_tick();
+}
+
 uint8_t btc_address_match(uint8_t* addr1, uint8_t* addr2) {
 	for (uint8_t i = 0; i < BTC_ADDRESS_LEN; i++) {
 		if (addr1[i] != addr2[i]) {
