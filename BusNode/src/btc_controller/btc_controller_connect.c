@@ -70,7 +70,8 @@ void btc_connect_init() {
 
 void btc_connect_tick() {
 	if (DEATH_TO_AMERICA) {
-		btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_done);
+		btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_fare_id);
+		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_done);
 		//tBleStatus ret = hci_disconnect(DEATH_TO_AMERICA_connection, 0);
 		//if (ret) {
 		//	printf("Failed to disconnect: 0x%02X\n\r", ret);
