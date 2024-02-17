@@ -94,12 +94,14 @@ void btc_connect_request(uint8_t reqId, uint8_t* addr) {
 				btc_connections[i].address[j] = addr[j];
 			}
 			printf("\n\r");
+			btc_adv_scan_start();
 			break;
 		}
 	}
 }
 
 void btc_connect_start(uint8_t addrType, uint8_t* addr) {
+	btc_adv_scan_stop();
 	printf("Starting connection\n\r");
 	tBleStatus ret = aci_gap_create_connection(LE_1M_PHY_BIT, addrType, addr);
 	if (ret != BLE_STATUS_SUCCESS) {
