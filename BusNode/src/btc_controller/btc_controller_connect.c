@@ -203,6 +203,7 @@ void btc_connect_tx_request(btc_connection_t* conn, pt_req_t reqType) {
 }
 
 void btc_connect_tx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
+	printf("TX Data: conn=[0x%08X] connection=[0x%04X] rx=[0x%04X]\n\r", conn, conn->connection, conn->rx);
 	if (conn->state == btc_connect_state_connected) {
 		tBleStatus ret = aci_gatt_clt_write_without_resp(conn->connection,conn->rx+1, len, data);
 		if(ret != BLE_STATUS_SUCCESS) {
