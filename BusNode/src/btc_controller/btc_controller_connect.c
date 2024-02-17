@@ -214,7 +214,11 @@ void btc_connect_rx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
 
 	    case pt_msg_fare_id_type:
 	    	ps_send_rsp_fare(conn->reqId, msg->data.fare_id.uuid);
-	    	btc_connect_tx_request(conn, pt_req_done);
+	    	//btc_connect_tx_request(conn, pt_req_done);
+	    	tBleStatus ret = hci_disconnect(conn->connection, 0);
+	    	if (ret) {
+	    		printf("Failed to disconnect: 0x%02X\n\r", ret);
+	    	}
 	    	break;
 
 	    default:
