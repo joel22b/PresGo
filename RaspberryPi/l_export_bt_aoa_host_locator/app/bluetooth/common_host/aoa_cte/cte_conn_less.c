@@ -82,11 +82,14 @@ sl_status_t cte_bt_on_event_conn_less(sl_bt_msg_t *evt)
       // Check if the tag is allowlisted.
       uint8_t addr[] = {0x66, 0x77, 0x88, 0xE1, 0x80, 0x02};
       uint8_t match = 1;
-      for (uint8_t i = 0; i < 6; i++) {
-        if (evt->data.evt_scanner_scan_report.address.addr[i] != addr[i]) {
-          match = 0;
-          break;
-        }
+      // for (uint8_t i = 0; i < 6; i++) {
+      //   if (evt->data.evt_scanner_scan_report.address.addr[i] != addr[i]) {
+      //     match = 0;
+      //     break;
+      //   }
+      // }
+      if (addr[5] != 0x02){
+        break;
       }
       if (!match) {
         break;
