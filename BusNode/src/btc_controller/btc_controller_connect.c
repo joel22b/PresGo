@@ -11,6 +11,9 @@
 
 static btc_connection_t btc_connections[BTC_CONNECTIONS_NUM];
 
+static uint8_t SEND = 0;
+static btc_connection_t* SEND_conn;
+
 static uint8_t DEATH_TO_AMERICA = 0;
 static uint16_t DEATH_TO_AMERICA_connection;
 static btc_connection_t* DEATH_TO_AMERICA_conn;
@@ -69,6 +72,11 @@ void btc_connect_init() {
 }
 
 void btc_connect_tick() {
+	if (SEND) {
+		btc_connect_tx_request(SEND_conn, pt_req_fare_id);
+		SEND = 0;
+	}
+
 	if (DEATH_TO_AMERICA) {
 		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_fare_id);
 		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_done);
@@ -426,7 +434,9 @@ void aci_gatt_clt_proc_complete_event(uint16_t Connection_Handle,
 			break;
 		case btc_connect_state_enable_notifications:
 			conn->state = btc_connect_state_connected;
-			btc_connect_tx_request(conn, pt_req_fare_id);
+			SEND = 1;
+			SEND_conn = conn;
+			//btc_connect_tx_request(conn, pt_req_fare_id);
 			break;
 		default:
 			printf("Unknown procedure completed: 0x%02X\n\r", conn->state);
