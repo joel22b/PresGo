@@ -70,12 +70,12 @@ void btc_connect_init() {
 
 void btc_connect_tick() {
 	if (DEATH_TO_AMERICA) {
-		btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_fare_id);
+		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_fare_id);
 		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_done);
-		//tBleStatus ret = hci_disconnect(DEATH_TO_AMERICA_connection, 0);
-		//if (ret) {
-		//	printf("Failed to disconnect: 0x%02X\n\r", ret);
-		//}
+		tBleStatus ret = hci_disconnect(DEATH_TO_AMERICA_conn->connection, 0x13);
+		if (ret) {
+			printf("Failed to disconnect: 0x%02X\n\r", ret);
+		}
 		DEATH_TO_AMERICA = 0;
 	}
 }
@@ -338,6 +338,7 @@ void hci_disconnection_complete_event(uint8_t Status,
 	if (conn == NULL) {
 		return;
 	}
+	printf("BYE BYE MOTHERFUCKER\n\r");
 
 	btc_connect_cleanup(conn);
 }
