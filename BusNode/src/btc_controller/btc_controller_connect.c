@@ -13,6 +13,7 @@ static btc_connection_t btc_connections[BTC_CONNECTIONS_NUM];
 
 static uint8_t DEATH_TO_AMERICA = 0;
 static uint16_t DEATH_TO_AMERICA_connection;
+static btc_connection_t* DEATH_TO_AMERICA_conn;
 
 void btc_connect_init() {
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
@@ -69,10 +70,11 @@ void btc_connect_init() {
 
 void btc_connect_tick() {
 	if (DEATH_TO_AMERICA) {
-		tBleStatus ret = hci_disconnect(DEATH_TO_AMERICA_connection, 0);
-		if (ret) {
-			printf("Failed to disconnect: 0x%02X\n\r", ret);
-		}
+		btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_done);
+		//tBleStatus ret = hci_disconnect(DEATH_TO_AMERICA_connection, 0);
+		//if (ret) {
+		//	printf("Failed to disconnect: 0x%02X\n\r", ret);
+		//}
 		DEATH_TO_AMERICA = 0;
 	}
 }
@@ -204,7 +206,11 @@ void btc_connect_tx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
 	if (conn->state == btc_connect_state_connected) {
 		tBleStatus ret = aci_gatt_clt_write_without_resp(conn->connection,conn->rx+1, len, data);
 		if(ret != BLE_STATUS_SUCCESS) {
-			printf("Error sending data to slave: 0x%02X (handle 0x%04X)\n\r", ret, conn->connection);
+			printf("Failed to send data: 0x%02X [0x%02X", ret, data[0]);
+			for (uint16_t i = 1; i < len; i++) {
+				printf(" 0x%02X", data[i]);
+			}
+			printf("]\n\r");
 		}
 	}
 	else {
@@ -226,10 +232,14 @@ void btc_connect_rx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
 			break;
 
 	    case pt_msg_fare_id_type:
-	    	ps_send_rsp_fare(conn->reqId, msg->data.fare_id.uuid);
+	    	if (conn->ps_rsp) {
+	    		conn->ps_rsp = 0;
+	    		ps_send_rsp_fare(conn->reqId, msg->data.fare_id.uuid);
+	    	}
 	    	//btc_connect_tx_request(conn, pt_req_done);
 	    	DEATH_TO_AMERICA = 1;
 	    	DEATH_TO_AMERICA_connection = conn->connection;
+	    	DEATH_TO_AMERICA_conn = conn;
 	    	break;
 
 	    default:
@@ -250,6 +260,7 @@ void btc_connect_cleanup(btc_connection_t* conn) {
 	conn->tx = 0;
 	conn->rx = 0;
 	conn->state = btc_connect_state_empty;
+	conn->ps_rsp = 1;
 }
 
 void btc_connect_timeout(void* data) {
@@ -257,7 +268,10 @@ void btc_connect_timeout(void* data) {
 	btc_connection_t* conn = (btc_connection_t*)(data-0x10);
 	if (conn->state != btc_connect_state_empty) {
 		printf("Timeout connection 0x%04X: state=0x%02X\n\r", conn->connection, conn->state);
-		ps_send_rsp_fare(conn->reqId, BTC_UUID_ERROR);
+		if (conn->ps_rsp) {
+			conn->ps_rsp = 0;
+			ps_send_rsp_fare(conn->reqId, BTC_UUID_ERROR);
+		}
 		btc_connect_cleanup(conn);
 	}
 }
