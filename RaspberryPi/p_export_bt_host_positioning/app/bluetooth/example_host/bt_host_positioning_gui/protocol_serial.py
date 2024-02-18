@@ -33,17 +33,16 @@ class ProtocolSerial:
             if read_data: 
                 cmd = read_data.decode().rstrip().replace("\r", "")
                 self.decode_message(cmd)
-                #print(f"Received: {cmd}")
+                print(f"Received: {cmd}")
 
     def serial_write(self, msg: psm.Message):
-        #while self.running:
         #print("["+str(msg)+"]")
         self.serialPort.write(msg.__str__().encode())
     
     def decode_message(self, raw: str):
         msgIdentifierStr = raw[1:4]
         if psm.MsgIdentifier.Rsp.name == msgIdentifierStr:
-            reqId = int(raw[5:7])
+            reqId = int(raw[5:7], 16)
             msgTypeStr = raw[8:12]
             if psm.MsgType.Fare.name == msgTypeStr:
                 self.callbacks[reqId](UUID(raw[13:45]))
