@@ -5,7 +5,6 @@
 import argparse
 from datetime import datetime
 import json
-import math
 import os
 import paho.mqtt.client as mqtt
 import protocol_serial as ps
@@ -13,27 +12,18 @@ import re
 import signal
 import threading
 from threading import Event, Lock
-import tkinter
+import tkinter_gui
 from uuid import UUID
 import visualizer
 
 DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "../bt_host_positioning/config/positioning_config.json")
 DEFAULT_CONNECTION = {"host": "localhost", "port": 1883}
 
-# GUI Constants
-GUI_WIDTH = 800 # in px
-GUI_HEIGHT = 800 # in px
-GUI_TIME_BETWEEN_UPDATES = 4000 # in ms
-GUI_FONT = 'Arial'
-GUI_COLOR_SUCCESS = 'green'
-GUI_COLOR_FAILURE = 'red'
-GUI_COLOR_PROCESSING = 'yellow'
-GUI_COLOR_NEUTRAL = 'grey'
+gui = None
 in_cylinder = {}
 tags_being_fare_checked = []
 close_event = Event()
 lock = Lock()
-
 someone_in_doorway = False
 processed_count = 0
 running = True
@@ -45,30 +35,10 @@ def signal_handler(sig, frame):
   ptSerial.running = False
   close_event.set()
 
-def check_close_event():
-  if close_event.is_set():
-    root.destroy()
-  else:
-    root.after(100, check_close_event)
-
 def is_point_inside_cylinder( x, y, z, radius, height):
   in_circle = x ** 2 + y ** 2 <= radius ** 2
   in_height_range = 0 <= z <= height
   return in_circle and in_height_range
-
-def reset_gui_main_text():
-  canvas.itemconfig(gui_main_text, text='Waiting for passengers...')
-  canvas.config(bg=GUI_COLOR_NEUTRAL)
-
-def setup_gui():
-  global root, canvas, gui_main_text, gui_status_text
-  root = tkinter.Tk()
-  root.title('PresGo GUI')
-  canvas = tkinter.Canvas(root, width=GUI_WIDTH, height=GUI_HEIGHT, bg=GUI_COLOR_NEUTRAL)
-  canvas.pack(fill='both', expand=True)
-  gui_main_text = canvas.create_text(math.ceil(GUI_WIDTH/2), math.ceil(GUI_HEIGHT/2), text='Waiting for passengers...', font=(GUI_FONT, math.ceil(GUI_WIDTH/40)))
-  gui_status_text = canvas.create_text(GUI_WIDTH-math.ceil(GUI_WIDTH/40), math.ceil(GUI_HEIGHT/40), text='System Status: Running', font=(GUI_FONT, math.ceil(GUI_WIDTH/60)), fill=GUI_COLOR_SUCCESS)
-  root.after(100, check_close_event)
 
 def setup_mqtt():
   parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -125,8 +95,7 @@ def on_message(client, userdata, msg):
             most_recent_in_cyl_id = id
             most_recent_in_cyl_time = time_last_seen
         if most_recent_in_cyl_id is not None:
-          canvas.itemconfig(gui_main_text, text=f'Attempting to validate {most_recent_in_cyl_id}') #update this message
-          canvas.config(bg=GUI_COLOR_PROCESSING)
+          gui.set_state(tkinter_gui.State.VALIDATING)
           tags_being_fare_checked.append(most_recent_in_cyl_id)
           cb = lambda uuid: get_fare_id(most_recent_in_cyl_id, uuid)
           ptSerial.send_request_fare(most_recent_in_cyl_id, cb)
@@ -139,12 +108,9 @@ def get_fare_id(address: str, uuid: UUID):
     if address in tags_being_fare_checked:
       tags_being_fare_checked.remove(address)
   if str(uuid) == '00000000-0000-0000-0000-000000000000':
-    canvas.itemconfig(gui_main_text, text=f'Failed to validate {address}') #update this error msg
-    canvas.config(bg=GUI_COLOR_FAILURE)
+    gui.set_state(tkinter_gui.State.FAILURE)
   else:
-    canvas.itemconfig(gui_main_text, text=f'Validated {address}') #update this success message
-    canvas.config(bg=GUI_COLOR_SUCCESS)
-  root.after(GUI_TIME_BETWEEN_UPDATES, reset_gui_main_text)
+    gui.set_state(tkinter_gui.State.SUCCESS)
 
 def door_announcement(inDoorway: bool):
   print("Announcement inDoorway: " + str(inDoorway))
@@ -154,9 +120,7 @@ def door_announcement(inDoorway: bool):
     if not inDoorway:
       global processed_count
       if processed_count == 0:
-        canvas.itemconfig(gui_main_text, text=f'Valid payment fob not found.')
-        canvas.config(bg=GUI_COLOR_FAILURE)
-        root.after(GUI_TIME_BETWEEN_UPDATES, reset_gui_main_text)
+        gui.set_state(tkinter_gui.State.FAILURE, 'Valid payment fob not found.')
       else:
         processed_count = 0
 
@@ -171,7 +135,8 @@ def main():
   signal.signal(signal.SIGINT, signal_handler)
 
   # setup gui and initialize global variables used by mqtt callbacks
-  setup_gui()
+  global gui
+  gui = tkinter_gui.TkinterGUI(close_event)
 
   # mqtt operations on separate thread to not block main gui thread
   thread_mqtt = threading.Thread(target=setup_mqtt, daemon=True)
@@ -181,7 +146,7 @@ def main():
   ptSerial = ps.ProtocolSerial(door_announcement)
 
   # GUI blocking loop
-  root.mainloop()
+  gui.start_main_loop()
 
 
 if __name__ == "__main__":
