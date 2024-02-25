@@ -34,7 +34,10 @@ class TkinterGUI:
     self.gui_main_text = self.canvas.create_text(WINDOW_WIDTH_PX/2, WINDOW_HEIGHT_PX/2, text=self.state.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='center')
     self.gui_person_counter_text = self.canvas.create_text(WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.get_person_counter_string(), font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='sw')
     self.gui_status_text = self.canvas.create_text(WINDOW_WIDTH_PX-WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.system_status.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill=self.system_status.value.color, anchor='se')
-    self.gui_status_text_template = self.canvas.create_text(self.canvas.bbox(self.gui_status_text)[0], WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=STATUS_TEXT_TEMPLATE, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='se')
+    self.canvas.create_text(self.canvas.bbox(self.gui_status_text)[0], WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=STATUS_TEXT_TEMPLATE, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='se')
+    lower_text_bounding_box = self.canvas.bbox(self.gui_person_counter_text)
+    gui_bottom_rectangle = self.canvas.create_rectangle(lower_text_bounding_box[0]-WINDOW_PADDING_PX, lower_text_bounding_box[1]-WINDOW_PADDING_PX, WINDOW_WIDTH_PX, lower_text_bounding_box[3]+WINDOW_PADDING_PX, fill='#3B3B3B')                                 
+    self.canvas.tag_lower(gui_bottom_rectangle, self.gui_person_counter_text)
     self.root.after(100, self.check_close_event)
 
   def start_main_loop(self):
