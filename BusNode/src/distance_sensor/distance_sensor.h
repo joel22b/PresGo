@@ -11,6 +11,7 @@
 #include "rf_driver_hal.h"
 
 void ds_init();
+uint8_t ds_is_init();
 I2C_HandleTypeDef* ds_get_i2c_handle();
 
 void ds_tick();

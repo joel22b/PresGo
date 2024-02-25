@@ -19,6 +19,7 @@
 
 #include "init.h"
 #include "protocol_serial.h"
+#include "protocol_serial_types.h"
 #include "btc_controller.h"
 #include "distance_sensor.h"
 
@@ -141,7 +142,14 @@ void ModulesTick(void)
   ps_init();
   btc_init();
 
-  PRINTF("Initialization Finished\n\r");
+  // Send initialization message
+  uint8_t initFlags = PS_INIT_EMPTY;
+  if (ds_is_init()) {
+	  initFlags |= PS_INIT_DISTANCE_SENSOR;
+  }
+  // TODO: Check BTC init
+  initFlags |= PS_INIT_BLUETOOTH_CONTROLLER;
+  ps_send_ann_init(initFlags);
 
   while(1) {
     

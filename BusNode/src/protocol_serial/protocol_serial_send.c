@@ -55,3 +55,12 @@ void ps_send_ann_door(uint8_t inDoorway) {
 				PS_SEPARATOR_CHAR,
 				ps_bool_to_str(inDoorway));
 }
+
+void ps_send_ann_init(uint8_t flags) {
+	printf("\t%.*s%c%.*s%c%02X\n\r",
+			PS_IDENTIFIER_LEN, PS_IDENTIFIER_ANNOUNCEMENT,
+			PS_SEPARATOR_CHAR,
+			PS_TYPE_LEN, PS_TYPE_INIT,
+			PS_SEPARATOR_CHAR,
+			flags);
+}
