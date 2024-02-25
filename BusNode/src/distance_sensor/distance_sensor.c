@@ -153,6 +153,10 @@ void ds_init() {
 	is_init = 1;
 }
 
+uint8_t ds_is_init() {
+	return is_init;
+}
+
 I2C_HandleTypeDef* ds_get_i2c_handle() {
 	if (is_init) {
 		return &hi2cx;

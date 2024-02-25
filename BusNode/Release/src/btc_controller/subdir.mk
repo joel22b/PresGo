@@ -4,13 +4,19 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/btc_controller/btc_controller.c 
+../src/btc_controller/btc_controller.c \
+../src/btc_controller/btc_controller_adv.c \
+../src/btc_controller/btc_controller_connect.c 
 
 OBJS += \
-./src/btc_controller/btc_controller.o 
+./src/btc_controller/btc_controller.o \
+./src/btc_controller/btc_controller_adv.o \
+./src/btc_controller/btc_controller_connect.o 
 
 C_DEPS += \
-./src/btc_controller/btc_controller.d 
+./src/btc_controller/btc_controller.d \
+./src/btc_controller/btc_controller_adv.d \
+./src/btc_controller/btc_controller_connect.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

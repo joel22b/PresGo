@@ -12,12 +12,15 @@ class ProtocolSerial:
     reqId = 0
     callbacks = []
     callbackAnnouncementDoor = None
+    callbackAnnouncementInit = None
 
-    def __init__(self, callbackAnnouncementDoor):
+    def __init__(self, port: str, callbackAnnouncementDoor, callbackAnnouncementInit):
         self.callbackAnnouncementDoor = callbackAnnouncementDoor
+        self.callbackAnnouncementInit = callbackAnnouncementInit
         # setup serial port for communicating with bluenrg board
         # /dev/ttyACM0 if plugged in before or without antenna array, else /dev/ttyACM1
-        self.serialPort = serial.Serial(port='/dev/ttyACM1', baudrate=115200, timeout=10)
+        self.serialPort = serial.Serial(port=port, baudrate=115200, timeout=10)
+
         # serial read on separate thread to not block main gui thread
         thread_ser_read = threading.Thread(target=self.serial_read_thread, daemon=True, args=())
         thread_ser_read.start()
@@ -27,8 +30,8 @@ class ProtocolSerial:
             read_data = self.serialPort.readline()
             if read_data: 
                 cmd = read_data.decode().rstrip().replace("\r", "")
-                self.decode_message(cmd)
                 print(f"Received: {cmd}")
+                self.decode_message(cmd)
 
     def serial_write(self, msg: psm.Message):
         #print("["+str(msg)+"]")
@@ -55,6 +58,8 @@ class ProtocolSerial:
                 if raw[10] == 'T':
                     inDoorway = True
                 self.callbackAnnouncementDoor(inDoorway)
+            elif psm.MsgType.Init.name == msgTypeStr:
+                self.callbackAnnouncementInit(int(raw[10:12], 16))
     
     def get_request_id(self) -> int:
         tmp = self.reqId
@@ -83,3 +88,8 @@ class ProtocolSerial:
         msg = psm.RequestDoor()
         msg.create(reqId)
         self.serial_write(msg)
+
+def init_printout(flags: int):
+    print("Initialization complete:")
+    for flag in psm.InitFlags:
+        print("\t" + flag.name.replace("_", " ") + ": " + str(bool(flag.value & flags)))

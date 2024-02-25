@@ -26,5 +26,11 @@
 #define PS_TYPE_FARE	"Fare"
 #define PS_TYPE_DIST	"Dist"
 #define PS_TYPE_DOOR	"Door"
+#define PS_TYPE_INIT	"Init"
+
+// INIT FLAGS
+#define PS_INIT_EMPTY					0x00
+#define PS_INIT_DISTANCE_SENSOR			0x01
+#define PS_INIT_BLUETOOTH_CONTROLLER	0x02
 
 #endif /* PROTOCOL_SERIAL_TYPES_H_ */

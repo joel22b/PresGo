@@ -30,5 +30,6 @@ void ps_send_rsp_fare(uint8_t reqId, uint8_t* uuid);
 void ps_send_rsp_dist(uint8_t reqId, uint32_t distance);
 void ps_send_rsp_door(uint8_t reqId, uint8_t inDoorway);
 void ps_send_ann_door(uint8_t inDoorway);
+void ps_send_ann_init(uint8_t flags);
 
 #endif /* PROTOCOL_SERIAL_H_ */
