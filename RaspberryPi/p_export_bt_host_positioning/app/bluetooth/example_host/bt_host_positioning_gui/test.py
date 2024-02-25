@@ -6,13 +6,16 @@ import protocol_serial as ps
 def door_announcement(inDoorway: bool):
   print("Announcement inDoorway: " + str(inDoorway))
 
+def init_announcement(flags: int):
+  ps.init_printout(flags)
+
 def get_fare_id(uuid: UUID):
   print("Fare ID: " + str(uuid))
   #time.sleep(10)
   #ptSerial.send_request_fare("0C4314F4627F", get_fare_id)
 
 global ptSerial
-ptSerial = ps.ProtocolSerial(door_announcement)
+ptSerial = ps.ProtocolSerial("COM9", door_announcement, init_announcement)
 
 time.sleep(2)
 print("Sending")

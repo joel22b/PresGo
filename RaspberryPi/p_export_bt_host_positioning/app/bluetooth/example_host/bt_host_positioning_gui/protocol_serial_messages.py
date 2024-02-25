@@ -12,6 +12,11 @@ class MsgType(Enum):
     Fare = 1
     Dist = 2
     Door = 3
+    Init = 4
+
+class InitFlags(Enum):
+    Distance_Sensor = 1
+    Bluetooth_Controller = 2
 
 class Message:
     complete = False
