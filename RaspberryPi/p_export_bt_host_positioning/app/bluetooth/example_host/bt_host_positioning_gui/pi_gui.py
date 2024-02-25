@@ -124,30 +124,20 @@ def door_announcement(inDoorway: bool):
       else:
         processed_count = 0
 
-def get_distance(distance: int):
-  print("Distance: " + str(distance))
-
-def get_door(inDoorway: bool):
-  print("inDoorway: " + str(inDoorway))
-
 def main():
   # setup signal handler for graceful shutdown
   signal.signal(signal.SIGINT, signal_handler)
-
   # setup gui and initialize global variables used by mqtt callbacks
   global gui
   gui = tkinter_gui.TkinterGUI(close_event)
-
   # mqtt operations on separate thread to not block main gui thread
   thread_mqtt = threading.Thread(target=setup_mqtt, daemon=True)
   thread_mqtt.start()
-
+  # setup communication with BlueNRG board
   global ptSerial
   ptSerial = ps.ProtocolSerial(door_announcement)
-
   # GUI blocking loop
   gui.start_main_loop()
-
 
 if __name__ == "__main__":
   main()
