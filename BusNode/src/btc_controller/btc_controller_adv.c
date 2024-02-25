@@ -77,7 +77,7 @@ void btc_adv_init() {
 
 	btc_adv_start();
 
-	printf("Initialization: BLE Advertisement complete\n\r");
+	//printf("Initialization: BLE Advertisement complete\n\r");
 }
 
 void btc_adv_start() {

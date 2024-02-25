@@ -67,6 +67,13 @@ class ProtocolSerial:
         if self.reqId == 100:
             self.reqId = 0
         return tmp
+    
+    def send_request_connect(self, address: str, callback):
+        reqId = self.get_request_id()
+        self.callbacks.insert(reqId, callback)
+        msg = psm.RequestConnect()
+        msg.create(reqId, address)
+        self.serial_write(msg)
 
     def send_request_fare(self, address: str, callback):
         reqId = self.get_request_id()

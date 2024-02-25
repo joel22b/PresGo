@@ -68,7 +68,7 @@ void btc_connect_init() {
 		return;
 	}
 
-	printf("Initialization: BLE Connect complete\n\r");
+	//printf("Initialization: BLE Connect complete\n\r");
 }
 
 void btc_connect_tick() {
@@ -234,7 +234,7 @@ void btc_connect_tx_request(btc_connection_t* conn, pt_req_t reqType) {
 }
 
 void btc_connect_tx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
-	printf("TX Data: conn=[0x%08X] connection=[0x%04X] rx=[0x%04X]\n\r", conn, conn->connection, conn->rx);
+	//printf("TX Data: conn=[0x%08X] connection=[0x%04X] rx=[0x%04X]\n\r", conn, conn->connection, conn->rx);
 	if (conn->state == btc_connect_state_connected) {
 		tBleStatus ret = aci_gatt_clt_write_without_resp(conn->connection,conn->rx+1, len, data);
 		if(ret != BLE_STATUS_SUCCESS) {
@@ -300,11 +300,14 @@ void btc_connect_timeout(void* data) {
 	btc_connection_t* conn = (btc_connection_t*)(data-0x10);
 	if (conn->state != btc_connect_state_empty) {
 		printf("Timeout connection 0x%04X: state=0x%02X\n\r", conn->connection, conn->state);
-		if (conn->ps_rsp) {
-			conn->ps_rsp = 0;
-			ps_send_rsp_fare(conn->reqId, BTC_UUID_ERROR);
+		if (conn->ps_fare) {
+			if (conn->ps_rsp) {
+				conn->ps_rsp = 0;
+				ps_send_rsp_fare(conn->reqId, BTC_UUID_ERROR);
+			}
+
+			btc_connect_cleanup(conn);
 		}
-		btc_connect_cleanup(conn);
 	}
 }
 

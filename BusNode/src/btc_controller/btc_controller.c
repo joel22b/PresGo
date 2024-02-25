@@ -20,7 +20,7 @@
 //static btc_scan_adv_t btc_scan_advs[BTC_CONNECTIONS_NUM];
 
 void btc_init() {
-	printf("Initialization: BLE started\n\r");
+	//printf("Initialization: BLE started\n\r");
 
 	aci_hal_write_config_data(CONFIG_DATA_PUBADDR_OFFSET, CONFIG_DATA_PUBADDR_LEN, BTC_ADDRESS);
 
@@ -30,7 +30,7 @@ void btc_init() {
 	btc_connect_init();
 	btc_adv_init();
 
-	printf("Initialization: BLE complete\n\r");
+	//printf("Initialization: BLE complete\n\r");
 }
 
 void btc_tick() {

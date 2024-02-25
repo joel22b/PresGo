@@ -13,6 +13,7 @@ class MsgType(Enum):
     Dist = 2
     Door = 3
     Init = 4
+    Conn = 5
 
 class InitFlags(Enum):
     Distance_Sensor = 1
@@ -59,6 +60,15 @@ class Announcement(Message):
         super().create()
         self.msgType = msgType
         self.raw += f"Ann:" + self.msgType.name
+
+class RequestConnect(Request):
+    address = ""
+
+    def create(self, reqId: int, address: str):
+        super().create(reqId, MsgType.Conn)
+        self.address = address
+        self.raw += ":" + address
+        self.finish()
 
 class RequestFare(Request):
     address = ""
