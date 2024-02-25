@@ -11,6 +11,13 @@
 
 static btc_connection_t btc_connections[BTC_CONNECTIONS_NUM];
 
+static uint8_t SEND = 0;
+static btc_connection_t* SEND_conn;
+
+static uint8_t DEATH_TO_AMERICA = 0;
+static uint16_t DEATH_TO_AMERICA_connection;
+static btc_connection_t* DEATH_TO_AMERICA_conn;
+
 void btc_connect_init() {
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		btc_connect_cleanup(&btc_connections[i]);
@@ -64,6 +71,23 @@ void btc_connect_init() {
 	printf("Initialization: BLE Connect complete\n\r");
 }
 
+void btc_connect_tick() {
+	if (SEND) {
+		btc_connect_tx_request(SEND_conn, pt_req_fare_id);
+		SEND = 0;
+	}
+
+	if (DEATH_TO_AMERICA) {
+		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_fare_id);
+		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_done);
+		tBleStatus ret = hci_disconnect(DEATH_TO_AMERICA_conn->connection, 0x13);
+		if (ret) {
+			printf("Failed to disconnect: 0x%02X\n\r", ret);
+		}
+		DEATH_TO_AMERICA = 0;
+	}
+}
+
 btc_connection_t* btc_connect_get(uint8_t index) {
 	if (index >= BTC_CONNECTIONS_NUM) {
 		printf("Error: get connection out of range: %d\n\r", index);
@@ -94,12 +118,14 @@ void btc_connect_request(uint8_t reqId, uint8_t* addr) {
 				btc_connections[i].address[j] = addr[j];
 			}
 			printf("\n\r");
+			btc_adv_scan_start();
 			break;
 		}
 	}
 }
 
 void btc_connect_start(uint8_t addrType, uint8_t* addr) {
+	btc_adv_scan_stop();
 	printf("Starting connection\n\r");
 	tBleStatus ret = aci_gap_create_connection(LE_1M_PHY_BIT, addrType, addr);
 	if (ret != BLE_STATUS_SUCCESS) {
@@ -186,10 +212,15 @@ void btc_connect_tx_request(btc_connection_t* conn, pt_req_t reqType) {
 }
 
 void btc_connect_tx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
+	printf("TX Data: conn=[0x%08X] connection=[0x%04X] rx=[0x%04X]\n\r", conn, conn->connection, conn->rx);
 	if (conn->state == btc_connect_state_connected) {
 		tBleStatus ret = aci_gatt_clt_write_without_resp(conn->connection,conn->rx+1, len, data);
 		if(ret != BLE_STATUS_SUCCESS) {
-			printf("Error sending data to slave: 0x%02X (handle 0x%04X)\n\r", ret, conn->connection);
+			printf("Failed to send data: 0x%02X [0x%02X", ret, data[0]);
+			for (uint16_t i = 1; i < len; i++) {
+				printf(" 0x%02X", data[i]);
+			}
+			printf("]\n\r");
 		}
 	}
 	else {
@@ -211,8 +242,14 @@ void btc_connect_rx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
 			break;
 
 	    case pt_msg_fare_id_type:
-	    	ps_send_rsp_fare(conn->reqId, msg->data.fare_id.uuid);
-	    	btc_connect_tx_request(conn, pt_req_done);
+	    	if (conn->ps_rsp) {
+	    		conn->ps_rsp = 0;
+	    		ps_send_rsp_fare(conn->reqId, msg->data.fare_id.uuid);
+	    	}
+	    	//btc_connect_tx_request(conn, pt_req_done);
+	    	DEATH_TO_AMERICA = 1;
+	    	DEATH_TO_AMERICA_connection = conn->connection;
+	    	DEATH_TO_AMERICA_conn = conn;
 	    	break;
 
 	    default:
@@ -233,6 +270,7 @@ void btc_connect_cleanup(btc_connection_t* conn) {
 	conn->tx = 0;
 	conn->rx = 0;
 	conn->state = btc_connect_state_empty;
+	conn->ps_rsp = 1;
 }
 
 void btc_connect_timeout(void* data) {
@@ -240,7 +278,10 @@ void btc_connect_timeout(void* data) {
 	btc_connection_t* conn = (btc_connection_t*)(data-0x10);
 	if (conn->state != btc_connect_state_empty) {
 		printf("Timeout connection 0x%04X: state=0x%02X\n\r", conn->connection, conn->state);
-		ps_send_rsp_fare(conn->reqId, BTC_UUID_ERROR);
+		if (conn->ps_rsp) {
+			conn->ps_rsp = 0;
+			ps_send_rsp_fare(conn->reqId, BTC_UUID_ERROR);
+		}
 		btc_connect_cleanup(conn);
 	}
 }
@@ -305,6 +346,7 @@ void hci_disconnection_complete_event(uint8_t Status,
 	if (conn == NULL) {
 		return;
 	}
+	printf("BYE BYE MOTHERFUCKER\n\r");
 
 	btc_connect_cleanup(conn);
 }
@@ -392,7 +434,9 @@ void aci_gatt_clt_proc_complete_event(uint16_t Connection_Handle,
 			break;
 		case btc_connect_state_enable_notifications:
 			conn->state = btc_connect_state_connected;
-			btc_connect_tx_request(conn, pt_req_fare_id);
+			SEND = 1;
+			SEND_conn = conn;
+			//btc_connect_tx_request(conn, pt_req_fare_id);
 			break;
 		default:
 			printf("Unknown procedure completed: 0x%02X\n\r", conn->state);

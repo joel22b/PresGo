@@ -149,6 +149,7 @@ void ModulesTick(void)
     
     /* Application tick */
     //APP_Tick();
+    btc_tick();
     
     ps_process();
 
