@@ -23,6 +23,7 @@
 #define PS_REQUEST_ID_LEN	2
 
 #define PS_TYPE_LEN		4
+#define PS_TYPE_CONNECT	"Conn"
 #define PS_TYPE_FARE	"Fare"
 #define PS_TYPE_DIST	"Dist"
 #define PS_TYPE_DOOR	"Door"

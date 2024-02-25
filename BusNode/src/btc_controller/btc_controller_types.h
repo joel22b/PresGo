@@ -40,6 +40,7 @@ struct btc_connection {
 	uint16_t rx;
 	VTIMER_HandleType timer;
 	uint8_t ps_rsp;
+	uint8_t ps_fare;
 	uint8_t address[BTC_ADDRESS_LEN];
 };
 typedef struct btc_connection btc_connection_t;

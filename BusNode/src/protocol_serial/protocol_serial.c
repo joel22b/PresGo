@@ -127,14 +127,23 @@ void ps_process_msg(uint8_t index) {
 		parse_index++;
 
 		// Parse type
-		if (ps_cmp(&ps_msg[index][parse_index], PS_TYPE_FARE, PS_TYPE_LEN)) {
+		if (ps_cmp(&ps_msg[index][parse_index], PS_TYPE_CONNECT, PS_TYPE_LEN)) {
+			parse_index += PS_TYPE_LEN + 1;
+
+			uint8_t addr[BTC_ADDRESS_LEN];
+			for (uint8_t i = 0; i < BTC_ADDRESS_LEN; i++) {
+				addr[BTC_ADDRESS_LEN - i - 1] = ps_str_to_hex(&ps_msg[index][parse_index + (i*2)]);
+			}
+			btc_connect_request(reqId, addr, 0);
+		}
+		else if (ps_cmp(&ps_msg[index][parse_index], PS_TYPE_FARE, PS_TYPE_LEN)) {
 			parse_index += PS_TYPE_LEN + 1;
 			// Request for Fare ID
 			uint8_t addr[BTC_ADDRESS_LEN];
 			for (uint8_t i = 0; i < BTC_ADDRESS_LEN; i++) {
 				addr[BTC_ADDRESS_LEN - i - 1] = ps_str_to_hex(&ps_msg[index][parse_index + (i*2)]);
 			}
-			btc_connect_request(reqId, addr);
+			btc_connect_fare_request(reqId, addr);
 			//uint8_t uuid[] = {0xAA, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0xFF};
 			//ps_send_rsp_fare(reqId, uuid);
 		}

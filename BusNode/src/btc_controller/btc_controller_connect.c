@@ -105,12 +105,13 @@ btc_connection_t* btc_connect_get_connection(uint16_t connection) {
 	return NULL;
 }
 
-void btc_connect_request(uint8_t reqId, uint8_t* addr) {
+void btc_connect_request(uint8_t reqId, uint8_t* addr, uint8_t ps_fare) {
 	printf("Connection requested: %d\n\r", reqId);
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		if (btc_connections[i].state == btc_connect_state_empty) {
 			btc_connections[i].state = btc_connect_state_scanning;
 			btc_connections[i].reqId = reqId;
+			btc_connections[i].ps_fare = ps_fare;
 			HAL_VTIMER_StartTimerMs(&btc_connections[i].timer, RSP_TIMEOUT);
 			printf("Address: ");
 			for (uint8_t j = 0; j < BTC_ADDRESS_LEN; j++) {
@@ -122,6 +123,27 @@ void btc_connect_request(uint8_t reqId, uint8_t* addr) {
 			break;
 		}
 	}
+}
+
+void btc_connect_fare_request(uint8_t reqId, uint8_t* addr) {
+	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
+		if (btc_address_match(btc_connections[i].address, addr)) {
+			if (btc_connections[i].state != btc_connect_state_connected) {
+				printf("Exists but not in connected state: %02X\n\r", btc_connections[i].state);
+				return;
+			}
+			btc_connections[i].reqId = reqId;
+			btc_connections[i].ps_fare = 1;
+			SEND = 1;
+			SEND_conn = &btc_connections[i];
+			return;
+		}
+	}
+
+	// If here, not connect exists
+	// Start new connection
+	printf("No connection found, create new one");
+	btc_connect_request(reqId, addr, 1);
 }
 
 void btc_connect_start(uint8_t addrType, uint8_t* addr) {
@@ -434,8 +456,10 @@ void aci_gatt_clt_proc_complete_event(uint16_t Connection_Handle,
 			break;
 		case btc_connect_state_enable_notifications:
 			conn->state = btc_connect_state_connected;
-			SEND = 1;
-			SEND_conn = conn;
+			if (conn->ps_fare) {
+				SEND = 1;
+				SEND_conn = conn;
+			}
 			//btc_connect_tx_request(conn, pt_req_fare_id);
 			break;
 		default:
