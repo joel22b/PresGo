@@ -24,10 +24,6 @@ class ProtocolSerial:
         # serial read on separate thread to not block main gui thread
         thread_ser_read = threading.Thread(target=self.serial_read_thread, daemon=True, args=())
         thread_ser_read.start()
-
-        # serial write on separate thread to not block main gui thread
-        #thread_ser_write = threading.Thread(target=self.write_to_serial_port, daemon=True, args=(ser,))
-        #thread_ser_write.start()
     
     def serial_read_thread(self):
         while self.running:
@@ -38,7 +34,6 @@ class ProtocolSerial:
                 self.decode_message(cmd)
 
     def serial_write(self, msg: psm.Message):
-        #while self.running:
         #print("["+str(msg)+"]")
         self.serialPort.write(msg.__str__().encode())
     
@@ -72,7 +67,6 @@ class ProtocolSerial:
         if self.reqId == 100:
             self.reqId = 0
         return tmp
-
 
     def send_request_fare(self, address: str, callback):
         reqId = self.get_request_id()
