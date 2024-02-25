@@ -1,6 +1,5 @@
 from collections import deque, namedtuple
 from enum import Enum
-import math
 import threading
 import time
 import tkinter
@@ -8,9 +7,11 @@ import tkinter
 WINDOW_TITLE = 'PresGo GUI'
 WINDOW_WIDTH_PX = 800
 WINDOW_HEIGHT_PX = 800
+WINDOW_PADDING_PX = 12
 FONT = 'Arial'
-FONT_SIZE = 24
+FONT_SIZE = 18
 FONT_WEIGHT = 'bold'
+PERSON_COUNTER_TEXT_TEMPLATE = 'Bus Occupancy: '
 STATUS_TEXT_TEMPLATE = 'System Status: '
 TIME_IN_SUCCESS_OR_FAILURE_STATE_S = 1.5
 
@@ -18,7 +19,8 @@ class TkinterGUI:
   def __init__(self, close_event):
     # setup graceful shutdown
     self.close_event = close_event
-    # initialize system status, state and state queue handling thread
+    # initialize person counter, system status, state and state queue handling thread
+    self.num_people_on_bus = 0
     self.system_status = SystemStatus.RUNNING
     self.state = State.WAITING
     self.state_queue = deque()
@@ -29,9 +31,10 @@ class TkinterGUI:
     self.root.title(WINDOW_TITLE)
     self.canvas = tkinter.Canvas(self.root, width=WINDOW_WIDTH_PX, height=WINDOW_HEIGHT_PX, bg=self.state.value.color)
     self.canvas.pack(fill='both', expand=True)
-    self.gui_main_text = self.canvas.create_text(math.ceil(WINDOW_WIDTH_PX/2), math.ceil(WINDOW_HEIGHT_PX/2), text=self.state.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), anchor='center')
-    self.gui_status_text = self.canvas.create_text(WINDOW_WIDTH_PX-FONT_SIZE/2, WINDOW_HEIGHT_PX-FONT_SIZE/2, text=self.system_status.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill=self.system_status.value.color, anchor='se')
-    self.gui_status_text_template = self.canvas.create_text(self.canvas.bbox(self.gui_status_text)[0], WINDOW_HEIGHT_PX-FONT_SIZE/2, text=STATUS_TEXT_TEMPLATE, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='se')  
+    self.gui_main_text = self.canvas.create_text(WINDOW_WIDTH_PX/2, WINDOW_HEIGHT_PX/2, text=self.state.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='center')
+    self.gui_person_counter_text = self.canvas.create_text(WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.get_person_counter_string(), font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='sw')
+    self.gui_status_text = self.canvas.create_text(WINDOW_WIDTH_PX-WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.system_status.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill=self.system_status.value.color, anchor='se')
+    self.gui_status_text_template = self.canvas.create_text(self.canvas.bbox(self.gui_status_text)[0], WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=STATUS_TEXT_TEMPLATE, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='se')
     self.root.after(100, self.check_close_event)
 
   def start_main_loop(self):
@@ -42,6 +45,18 @@ class TkinterGUI:
       self.root.destroy()
     else:
       self.root.after(100, self.check_close_event)
+
+  def get_person_counter_string(self):
+    return f'{PERSON_COUNTER_TEXT_TEMPLATE}{self.num_people_on_bus}'
+
+  def increment_person_counter(self):
+    self.num_people_on_bus += 1
+    self.canvas.itemconfig(self.gui_person_counter_text, self.get_person_counter_string())
+
+  def decrement_person_counter(self):
+    if self.num_people_on_bus > 0:
+      self.num_people_on_bus -= 1
+    self.canvas.itemconfig(self.gui_person_counter_text, self.get_person_counter_string())
 
   def process_state_queue(self):
     while not self.close_event.is_set():
@@ -72,7 +87,7 @@ class TkinterGUI:
   def set_state(self, state, display_text=None):
     display_text = display_text if display_text is not None else state.value.default_message
     self.state_queue.append(StateWithMessage(state=state, message=display_text))
-    # add waiting state to the queue after failure or success status, to be shown after TIME_IN_SUCCESS_OR_FAILURE_STATE_S seconds
+    # add waiting state to the queue for after failure or success state, to be shown after TIME_IN_SUCCESS_OR_FAILURE_STATE_S seconds
     if state == State.SUCCESS or state == State.FAILURE:
       self.state_queue.append(StateWithMessage(state=State.WAITING, message=State.WAITING.value.default_message))
 
