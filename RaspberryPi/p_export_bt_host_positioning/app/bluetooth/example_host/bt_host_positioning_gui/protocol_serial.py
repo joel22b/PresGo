@@ -30,7 +30,7 @@ class ProtocolSerial:
             read_data = self.serialPort.readline()
             if read_data: 
                 cmd = read_data.decode().rstrip().replace("\r", "")
-                print(f"Received: {cmd}")
+                #print(f"Received: {cmd}")
                 self.decode_message(cmd)
 
     def serial_write(self, msg: psm.Message):

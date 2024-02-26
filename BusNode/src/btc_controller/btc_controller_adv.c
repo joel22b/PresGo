@@ -108,14 +108,14 @@ void btc_adv_scan_start() {
 	tBleStatus ret = aci_gap_start_procedure(GAP_GENERAL_CONNECTION_ESTABLISHMENT_PROC, LE_1M_PHY_BIT, 0, 0);
 
 	if (ret != BLE_STATUS_SUCCESS) {
-		printf("Error while starting scanning: 0x%02X\n\r", ret);
+		//printf("Error while starting scanning: 0x%02X\n\r", ret);
 	}
 }
 
 void btc_adv_scan_stop() {
 	tBleStatus ret = aci_gap_terminate_proc(GAP_GENERAL_CONNECTION_ESTABLISHMENT_PROC);
 	if (ret != BLE_STATUS_SUCCESS) {
-		printf("Error while stopping scanning: 0x%02X\n\r", ret);
+		//printf("Error while stopping scanning: 0x%02X\n\r", ret);
 	}
 }
 
