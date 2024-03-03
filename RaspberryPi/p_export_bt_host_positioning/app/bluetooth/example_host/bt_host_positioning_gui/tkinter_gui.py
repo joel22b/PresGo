@@ -6,7 +6,7 @@ import tkinter
 
 WINDOW_TITLE = 'PresGo GUI'
 WINDOW_WIDTH_PX = 800
-WINDOW_HEIGHT_PX = 800
+WINDOW_HEIGHT_PX = 455
 WINDOW_PADDING_PX = 12
 FONT = 'Arial'
 FONT_SIZE = 18
@@ -15,10 +15,23 @@ PERSON_COUNTER_TEXT_TEMPLATE = 'Bus Occupancy: '
 STATUS_TEXT_TEMPLATE = 'System Status: '
 TIME_IN_SUCCESS_OR_FAILURE_STATE_S = 1.5
 
+ColorWithDefaultMessage = namedtuple('ColorWithDefaultMessage', ['color', 'default_message'])
+StateWithMessage = namedtuple('StateWithMessage', ['state', 'message'])
+
+class SystemStatus(Enum):
+  RUNNING = ColorWithDefaultMessage(color='green', default_message='Running')
+  ERROR = ColorWithDefaultMessage(color='red', default_message='Error')
+
+class State(Enum):
+  WAITING = ColorWithDefaultMessage(color='grey', default_message='Waiting for passengers...')
+  VALIDATING = ColorWithDefaultMessage(color='yellow', default_message='Attempting to process payment...')
+  SUCCESS = ColorWithDefaultMessage(color='green', default_message='Payment completed successfully.')
+  FAILURE = ColorWithDefaultMessage(color='red', default_message='Payment was not successful.')
+
 class TkinterGUI:
-  def __init__(self, close_event):
+  def __init__(self):
     # setup graceful shutdown
-    self.close_event = close_event
+    self.running = True 
     # initialize person counter, system status, state and state queue handling thread
     self.num_people_on_bus = 0
     self.system_status = SystemStatus.RUNNING
@@ -31,23 +44,20 @@ class TkinterGUI:
     self.root.title(WINDOW_TITLE)
     self.canvas = tkinter.Canvas(self.root, width=WINDOW_WIDTH_PX, height=WINDOW_HEIGHT_PX, bg=self.state.value.color)
     self.canvas.pack(fill='both', expand=True)
-    self.gui_main_text = self.canvas.create_text(WINDOW_WIDTH_PX/2, WINDOW_HEIGHT_PX/2, text=self.state.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='center')
     self.gui_person_counter_text = self.canvas.create_text(WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.get_person_counter_string(), font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='sw')
     self.gui_status_text = self.canvas.create_text(WINDOW_WIDTH_PX-WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.system_status.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill=self.system_status.value.color, anchor='se')
     self.canvas.create_text(self.canvas.bbox(self.gui_status_text)[0], WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=STATUS_TEXT_TEMPLATE, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='se')
     lower_text_bounding_box = self.canvas.bbox(self.gui_person_counter_text)
     gui_bottom_rectangle = self.canvas.create_rectangle(lower_text_bounding_box[0]-WINDOW_PADDING_PX, lower_text_bounding_box[1]-WINDOW_PADDING_PX, WINDOW_WIDTH_PX, lower_text_bounding_box[3]+WINDOW_PADDING_PX, fill='#3B3B3B')                                 
     self.canvas.tag_lower(gui_bottom_rectangle, self.gui_person_counter_text)
-    self.root.after(100, self.check_close_event)
+    self.gui_main_text = self.canvas.create_text(WINDOW_WIDTH_PX/2, (WINDOW_HEIGHT_PX-(lower_text_bounding_box[3]-lower_text_bounding_box[1]+2*WINDOW_PADDING_PX))/2, text=self.state.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='center')
+    self.root.after(100, self.check_if_running)
 
-  def start_main_loop(self):
-    self.root.mainloop()
-
-  def check_close_event(self):
-    if self.close_event.is_set():
+  def check_if_running(self):
+    if not self.running:
       self.root.destroy()
     else:
-      self.root.after(100, self.check_close_event)
+      self.root.after(100, self.check_if_running)
 
   def get_person_counter_string(self):
     return f'{PERSON_COUNTER_TEXT_TEMPLATE}{self.num_people_on_bus}'
@@ -61,8 +71,12 @@ class TkinterGUI:
       self.num_people_on_bus -= 1
     self.canvas.itemconfig(self.gui_person_counter_text, self.get_person_counter_string())
 
+  def set_system_status(self, system_status):
+    self.system_status = system_status
+    self.canvas.itemconfig(self.gui_status_text, text=system_status.value.default_message)
+
   def process_state_queue(self):
-    while not self.close_event.is_set():
+    while self.running:
       if not self.state_queue:
         continue
       state, display_text = None, None
@@ -87,26 +101,9 @@ class TkinterGUI:
       if state == State.SUCCESS or state == State.FAILURE:
         time.sleep(TIME_IN_SUCCESS_OR_FAILURE_STATE_S)
 
-  def set_state(self, state, display_text=None):
+  def enqueue_state(self, state, display_text=None):
     display_text = display_text if display_text is not None else state.value.default_message
     self.state_queue.append(StateWithMessage(state=state, message=display_text))
     # add waiting state to the queue for after failure or success state, to be shown after TIME_IN_SUCCESS_OR_FAILURE_STATE_S seconds
     if state == State.SUCCESS or state == State.FAILURE:
       self.state_queue.append(StateWithMessage(state=State.WAITING, message=State.WAITING.value.default_message))
-
-  def set_system_status(self, system_status):
-    self.system_status = system_status
-    self.canvas.itemconfig(self.gui_status_text, text=system_status.value.default_message)
-
-StateWithMessage = namedtuple('StateWithMessage', ['state', 'message'])
-ColorWithDefaultMessage = namedtuple('ColorWithDefaultMessage', ['color', 'default_message'])
-
-class State(Enum):
-  WAITING = ColorWithDefaultMessage(color='grey', default_message='Waiting for passengers...')
-  VALIDATING = ColorWithDefaultMessage(color='yellow', default_message='Attempting to process payment...')
-  SUCCESS = ColorWithDefaultMessage(color='green', default_message='Payment completed successfully.')
-  FAILURE = ColorWithDefaultMessage(color='red', default_message='Payment was not successful.')
-
-class SystemStatus(Enum):
-  RUNNING = ColorWithDefaultMessage(color='green', default_message='Running')
-  VALIDATING = ColorWithDefaultMessage(color='red', default_message='Error')

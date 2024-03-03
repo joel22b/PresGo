@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
+import protocol_serial_messages as psm
 import serial
 import threading
 from uuid import UUID
-
-import protocol_serial_messages as psm
 
 class ProtocolSerial:
     running = True
@@ -20,7 +19,6 @@ class ProtocolSerial:
         # setup serial port for communicating with bluenrg board
         # /dev/ttyACM0 if plugged in before or without antenna array, else /dev/ttyACM1
         self.serialPort = serial.Serial(port=port, baudrate=115200, timeout=10)
-
         # serial read on separate thread to not block main gui thread
         thread_ser_read = threading.Thread(target=self.serial_read_thread, daemon=True, args=())
         thread_ser_read.start()
@@ -30,7 +28,7 @@ class ProtocolSerial:
             read_data = self.serialPort.readline()
             if read_data: 
                 cmd = read_data.decode().rstrip().replace("\r", "")
-                #print(f"Received: {cmd}")
+                print(f"Received: {cmd}")
                 self.decode_message(cmd)
 
     def serial_write(self, msg: psm.Message):
