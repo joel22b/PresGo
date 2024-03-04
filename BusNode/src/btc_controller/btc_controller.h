@@ -25,6 +25,7 @@ void btc_connect_request(uint8_t reqId, uint8_t* addr, uint8_t ps_fare);
 void btc_connect_fare_request(uint8_t reqId, uint8_t* addr);
 void btc_connect_start(uint8_t addrType, uint8_t* addr);
 void btc_connect_finish(uint16_t connection, uint8_t* addr);
+void btc_connect_proc_complete(btc_connection_t* conn, uint8_t error);
 void btc_connect_discover_services(btc_connection_t* conn);
 void btc_connect_discover_characteristics(btc_connection_t* conn);
 void btc_connect_enable_notifications(btc_connection_t* conn);
@@ -41,6 +42,11 @@ void btc_adv_scan_start();
 void btc_adv_scan_stop();
 void btc_adv_callback(uint8_t Num_Reports, Advertising_Report_t Advertising_Report[]);
 uint8_t btc_adv_match(uint8_t* addr);
+
+void btc_event_init();
+btc_event_t* btc_event_next(uint8_t* index);
+void btc_event_free(uint8_t index);
+void btc_event_add(btc_event_t* event);
 
 /*void btc_connect_request(uint8_t reqId, uint8_t* addr);
 void btc_connect_start(uint16_t connection, uint8_t* addr);

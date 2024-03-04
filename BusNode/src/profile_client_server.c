@@ -1201,7 +1201,7 @@ void print_uuid(uint8_t *uuid)
 
 #define INSUFFICIENT_ENCRYPTION 0x0F
 
-void aci_gatt_clt_error_resp_event(uint16_t Connection_Handle,
+/*void aci_gatt_clt_error_resp_event(uint16_t Connection_Handle,
                                uint8_t Req_Opcode,
                                uint16_t Attribute_Handle,
                                uint8_t Error_Code)
@@ -1221,7 +1221,7 @@ void aci_gatt_clt_error_resp_event(uint16_t Connection_Handle,
     StartPairing(i, Connection_Handle, (MasterState)(slaves[i].state - 1)); // After pairing go one state back
     return;
   }  
-}
+}*/
 
 /*void aci_gatt_clt_proc_complete_event(uint16_t Connection_Handle,
                                   uint8_t Error_Code)

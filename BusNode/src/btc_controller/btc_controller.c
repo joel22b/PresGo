@@ -29,6 +29,7 @@ void btc_init() {
 
 	btc_connect_init();
 	btc_adv_init();
+	btc_event_init();
 
 	//printf("Initialization: BLE complete\n\r");
 }

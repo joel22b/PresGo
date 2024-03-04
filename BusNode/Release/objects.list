@@ -67,6 +67,7 @@
 "src/btc_controller/btc_controller.o"
 "src/btc_controller/btc_controller_adv.o"
 "src/btc_controller/btc_controller_connect.o"
+"src/btc_controller/btc_event.o"
 "src/distance_sensor/core/VL53L1X_api.o"
 "src/distance_sensor/core/VL53L1X_calibration.o"
 "src/distance_sensor/distance_sensor.o"

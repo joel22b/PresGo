@@ -18,6 +18,13 @@ static uint8_t DEATH_TO_AMERICA = 0;
 static uint16_t DEATH_TO_AMERICA_connection;
 static btc_connection_t* DEATH_TO_AMERICA_conn;
 
+VTIMER_HandleType timer_fuck;
+
+void btc_tx_cb(void* data) {
+	btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_done);
+	(void)data;
+}
+
 void btc_connect_init() {
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		btc_connect_cleanup(&btc_connections[i]);
@@ -25,6 +32,8 @@ void btc_connect_init() {
 		btc_connections[i].timer.userData = (void*)&(btc_connections[i]);
 		//printf("Pointer address: 0x%08X\n\r", &btc_connections[i]);
 	}
+	timer_fuck.callback = btc_tx_cb;
+	timer_fuck.userData = NULL;
 
 	/* Since we need to transfer notifications of 244 bytes in a single packet, the LL payload must be
 	244 bytes for application data + 3 bytes for ATT header + 4 bytes for L2CAP header. */
@@ -72,18 +81,69 @@ void btc_connect_init() {
 }
 
 void btc_connect_tick() {
+	uint8_t index;
+	btc_event_t* event = btc_event_next(&index);
+	while (event != NULL) {
+		// Process event
+		btc_connection_t* conn = NULL;
+		switch (event->id) {
+			case btc_event_connect:
+				btc_connect_finish(event->connect.connection, event->connect.address);
+				break;
+			case btc_event_disconnect:
+				conn = btc_connect_get_connection(event->disconnect.connection);
+				if (conn == NULL) {
+					continue;
+				}
+				btc_connect_cleanup(conn);
+				printf("BYE BYE MOTHERFUCKER\n\r");
+				break;
+			case btc_event_proc_complete:
+				conn = btc_connect_get_connection(event->proc_complete.connection);
+				if (conn == NULL) {
+					if (event->proc_complete.error != BLE_STATUS_SUCCESS) {
+						printf("Procedure terminated with error 0x%02X (0x%04X) could not map connection handle to btc_connections\n\r",
+								event->proc_complete.error, event->proc_complete.connection);
+					}
+					return;
+				}
+				btc_connect_proc_complete(conn, event->proc_complete.error);
+				break;
+			case btc_event_rx_data:
+				conn = btc_connect_get_connection(event->rx_data.connection);
+				if (conn == NULL) {
+					return;
+				}
+
+				if(event->rx_data.attribute == conn->tx + 1) {
+					btc_connect_rx_data(conn, event->rx_data.data, event->rx_data.dataLength);
+				}
+				break;
+			default:
+				printf("Unknown BTC event: 0x%02X\n\r", event->id);
+				break;
+		}
+
+		// Cleanup and get next event
+		btc_event_free(index);
+		event = btc_event_next(&index);
+	}
+
 	if (SEND) {
 		btc_connect_tx_request(SEND_conn, pt_req_fare_id);
+		//btc_connect_tx_request(SEND_conn, pt_req_done);
 		SEND = 0;
 	}
 
 	if (DEATH_TO_AMERICA) {
+		printf("DEATH TO AMERICA\n\r");
 		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_fare_id);
 		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_done);
-		tBleStatus ret = hci_disconnect(DEATH_TO_AMERICA_conn->connection, 0x13);
-		if (ret) {
-			printf("Failed to disconnect: 0x%02X\n\r", ret);
-		}
+		HAL_VTIMER_StartTimerMs(&timer_fuck, 1000);
+		//tBleStatus ret = hci_disconnect(DEATH_TO_AMERICA_conn->connection, 0x13);
+		//if (ret) {
+		//	printf("Failed to disconnect: 0x%02X\n\r", ret);
+		//}
 		DEATH_TO_AMERICA = 0;
 	}
 }
@@ -149,7 +209,6 @@ void btc_connect_fare_request(uint8_t reqId, uint8_t* addr) {
 
 void btc_connect_start(uint8_t addrType, uint8_t* addr) {
 	btc_adv_scan_stop();
-	//printf("Starting connection\n\r");
 	tBleStatus ret = aci_gap_create_connection(LE_1M_PHY_BIT, addrType, addr);
 	if (ret != BLE_STATUS_SUCCESS) {
 		printf("Failed to start connection 0x%02X\n\r", ret);
@@ -168,7 +227,6 @@ void btc_connect_finish(uint16_t connection, uint8_t* addr) {
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		if (btc_connections[i].state == btc_connect_state_connecting
 				&& btc_address_match(btc_connections[i].address, addr)) {
-			//printf("Finished creating connection\n\r");
 			btc_connections[i].state = btc_connect_state_discover_config;
 			btc_connections[i].connection = connection;
 
@@ -177,6 +235,47 @@ void btc_connect_finish(uint16_t connection, uint8_t* addr) {
 				btc_connect_discover_services(&btc_connections[i]);
 			}
 		}
+	}
+}
+
+void btc_connect_proc_complete(btc_connection_t* conn, uint8_t error) {
+	if(error != BLE_STATUS_SUCCESS){
+		printf("Procedure terminated with error 0x%02X (0x%04X) state=0x%02X.\r\n",
+				error, conn->connection, conn->state);
+		conn->state = btc_connect_state_failed;
+		return;
+	}
+
+	switch (conn->state) {
+		case btc_connect_state_discover_config:
+			btc_connect_discover_services(conn);
+			break;
+		case btc_connect_state_discover_service:
+			if (conn->service_start != 0) {
+				btc_connect_discover_characteristics(conn);
+			}
+			break;
+		case btc_connect_state_discover_characteristic:
+			if (conn->tx != 0) {
+				btc_connect_enable_notifications(conn);
+			}
+			break;
+		case btc_connect_state_enable_notifications:
+			conn->state = btc_connect_state_connected;
+			printf("State: connected\n\r");
+			if (conn->ps_fare) {
+				SEND = 1;
+				SEND_conn = conn;
+			}
+			//btc_connect_tx_request(conn, pt_req_fare_id);
+			break;
+		case btc_connect_state_connected:
+			// Response to write
+			// TODO: Add logic maybe?
+			break;
+		default:
+			printf("Unknown procedure completed: 0x%02X\n\r", conn->state);
+			break;
 	}
 }
 
@@ -237,7 +336,8 @@ void btc_connect_tx_request(btc_connection_t* conn, pt_req_t reqType) {
 void btc_connect_tx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
 	//printf("TX Data: conn=[0x%08X] connection=[0x%04X] rx=[0x%04X]\n\r", conn, conn->connection, conn->rx);
 	if (conn->state == btc_connect_state_connected) {
-		tBleStatus ret = aci_gatt_clt_write_without_resp(conn->connection,conn->rx+1, len, data);
+		//tBleStatus ret = aci_gatt_clt_write_without_resp(conn->connection,conn->rx+1, len, data);
+		tBleStatus ret = aci_gatt_clt_write(conn->connection,conn->rx+1, len, data);
 		if(ret != BLE_STATUS_SUCCESS) {
 			printf("Failed to send data: 0x%02X [0x%02X", ret, data[0]);
 			for (uint16_t i = 1; i < len; i++) {
@@ -317,66 +417,6 @@ void btc_connect_timeout(void* data) {
  *
  * Interrupts
 ================================= */
-void hci_le_connection_complete_event(uint8_t Status,
-                                      uint16_t Connection_Handle,
-                                      uint8_t Role,
-                                      uint8_t Peer_Address_Type,
-                                      uint8_t Peer_Address[6],
-                                      uint16_t Conn_Interval,
-                                      uint16_t Conn_Latency,
-                                      uint16_t Supervision_Timeout,
-                                      uint8_t Master_Clock_Accuracy)
-
-{
-	if(Status == 0){
-		btc_connect_finish(Connection_Handle, Peer_Address);
-	}
-	else if(Status == BLE_ERROR_UNKNOWN_CONNECTION_ID){
-		printf("Connection canceled.\r\n");
-	}
-}
-
-void hci_le_enhanced_connection_complete_event(uint8_t Status,
-                                               uint16_t Connection_Handle,
-                                               uint8_t Role,
-                                               uint8_t Peer_Address_Type,
-                                               uint8_t Peer_Address[6],
-                                               uint8_t Local_Resolvable_Private_Address[6],
-                                               uint8_t Peer_Resolvable_Private_Address[6],
-                                               uint16_t Conn_Interval,
-                                               uint16_t Conn_Latency,
-                                               uint16_t Supervision_Timeout,
-                                               uint8_t Master_Clock_Accuracy)
-{
-
-  hci_le_connection_complete_event(Status,
-                                   Connection_Handle,
-                                   Role,
-                                   Peer_Address_Type,
-                                   Peer_Address,
-                                   Conn_Interval,
-                                   Conn_Latency,
-                                   Supervision_Timeout,
-                                   Master_Clock_Accuracy);
-}
-
-void hci_disconnection_complete_event(uint8_t Status,
-                                      uint16_t Connection_Handle,
-                                      uint8_t Reason)
-{
-	if(Status != 0){
-		return;
-	}
-
-	btc_connection_t* conn = btc_connect_get_connection(Connection_Handle);
-	if (conn == NULL) {
-		return;
-	}
-	//printf("BYE BYE MOTHERFUCKER\n\r");
-
-	btc_connect_cleanup(conn);
-}
-
 // GATT Services callback
 void aci_att_clt_read_by_group_type_resp_event(uint16_t Connection_Handle,
                                            uint8_t Attribute_Data_Length,
@@ -418,10 +458,12 @@ void aci_att_clt_read_by_type_resp_event(uint16_t Connection_Handle,
 				//print_uuid(&Handle_Value_Pair_Data[i+5]);
 				if(memcmp(&Handle_Value_Pair_Data[i+5], BTC_GATT_CHR_TX_UUID, 16) == 0){
 					conn->tx = handle;
+					printf("Tx handle: 0x%04X\n\r", conn->tx);
 					//PRINTF("TX Char handle for slave %d: 0x%04X\r\n", slave_index, handle);
 				}
 				else if(memcmp(&Handle_Value_Pair_Data[i+5], BTC_GATT_CHR_RX_UUID, 16) == 0){
 					conn->rx = handle;
+					printf("Rx handle: 0x%04X\n\r", conn->rx);
 					//PRINTF("RX Char Handle for slave %d: 0x%04X\r\n", slave_index, handle);
 				}
 			}
@@ -429,60 +471,17 @@ void aci_att_clt_read_by_type_resp_event(uint16_t Connection_Handle,
 	}
 }
 
-// General procedure complete callback
-void aci_gatt_clt_proc_complete_event(uint16_t Connection_Handle,
-                                  uint8_t Error_Code)
+void aci_gatt_eatt_proc_timeout_event(uint16_t Connection_Handle,
+                                      uint16_t CID)
 {
-	btc_connection_t* conn = btc_connect_get_connection(Connection_Handle);
-	if (conn == NULL) {
-		return;
-	}
-
-	if(Error_Code != BLE_STATUS_SUCCESS){
-		printf("Procedure terminated with error 0x%02X (0x%04X) state=0x%02X.\r\n", Error_Code, Connection_Handle, conn->state);
-		conn->state = btc_connect_state_failed;
-		return;
-	}
-
-	switch (conn->state) {
-		case btc_connect_state_discover_config:
-			btc_connect_discover_services(conn);
-			break;
-		case btc_connect_state_discover_service:
-			if (conn->service_start != 0) {
-				btc_connect_discover_characteristics(conn);
-			}
-			break;
-		case btc_connect_state_discover_characteristic:
-			if (conn->tx != 0) {
-				btc_connect_enable_notifications(conn);
-			}
-			break;
-		case btc_connect_state_enable_notifications:
-			conn->state = btc_connect_state_connected;
-			if (conn->ps_fare) {
-				SEND = 1;
-				SEND_conn = conn;
-			}
-			//btc_connect_tx_request(conn, pt_req_fare_id);
-			break;
-		default:
-			printf("Unknown procedure completed: 0x%02X\n\r", conn->state);
-			break;
-	}
+	printf("GATT timeout event: Handle=0x%04X CID=0x%04X\n\r", Connection_Handle, CID);
 }
 
-void aci_gatt_clt_notification_event(uint16_t Connection_Handle,
-                                 uint16_t Attribute_Handle,
-                                 uint16_t Attribute_Value_Length,
-                                 uint8_t Attribute_Value[])
+void aci_gatt_clt_error_resp_event(uint16_t Connection_Handle,
+                               uint8_t Req_Opcode,
+                               uint16_t Attribute_Handle,
+                               uint8_t Error_Code)
 {
-	btc_connection_t* conn = btc_connect_get_connection(Connection_Handle);
-	if (conn == NULL) {
-		return;
-	}
-
-	if(Attribute_Handle == conn->tx + 1) {
-		btc_connect_rx_data(conn, Attribute_Value, Attribute_Value_Length);
-	}
+  printf("aci_gatt_clt_error_resp_event handle=0x%04X req_opcode=0x%02X att_handle=0x%04X error=0x%02X\n\r",
+		  Connection_Handle, Req_Opcode, Attribute_Handle, Error_Code);
 }
