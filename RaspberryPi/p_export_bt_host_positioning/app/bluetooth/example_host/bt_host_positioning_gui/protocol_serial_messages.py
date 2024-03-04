@@ -14,6 +14,7 @@ class MsgType(Enum):
     Door = 3
     Init = 4
     Conn = 5
+    Disc = 6
 
 class InitFlags(Enum):
     Distance_Sensor = 1
@@ -88,6 +89,9 @@ class RequestDoor(Request):
     def create(self, reqId: int):
         super().create(reqId, MsgType.Door)
         self.finish()
+
+class ResponseConnect(Response):
+    state: int = 0
 
 class ResponseFare(Response):
     uuid: UUID = None

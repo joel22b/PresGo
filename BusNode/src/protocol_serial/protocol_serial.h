@@ -26,6 +26,7 @@ uint8_t ps_bool_to_str(uint8_t bool);
 uint8_t ps_str_to_hex(uint8_t* byte);
 uint8_t ps_char_to_hex(uint8_t chr);
 
+void ps_send_rsp_connect(uint8_t reqId, uint32_t state);
 void ps_send_rsp_fare(uint8_t reqId, uint8_t* uuid);
 void ps_send_rsp_dist(uint8_t reqId, uint32_t distance);
 void ps_send_rsp_door(uint8_t reqId, uint8_t inDoorway);

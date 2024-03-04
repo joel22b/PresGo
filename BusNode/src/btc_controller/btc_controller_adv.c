@@ -122,7 +122,7 @@ void btc_adv_scan_stop() {
 void btc_adv_callback(uint8_t Num_Reports, Advertising_Report_t Advertising_Report[]) {
 	for (uint8_t i = 0; i < Num_Reports; i++) {
 		if (btc_adv_match(Advertising_Report[i].Address)) {
-			printf("Good Adv found!\n\r");
+			//printf("Good Adv found!\n\r");
 			// Device found!
 			btc_adv_scan_stop();
 			btc_connect_start(Advertising_Report[i].Address_Type, Advertising_Report[i].Address);
@@ -145,7 +145,6 @@ uint8_t btc_adv_match(uint8_t* addr) {
 				}
 			}
 			if (match) {
-				printf("Found Adv\n\r");
 				btc_connect_get(scan_adv)->state = btc_connect_state_connecting;
 				return 1;
 			}

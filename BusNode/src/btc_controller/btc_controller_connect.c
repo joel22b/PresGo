@@ -95,8 +95,9 @@ void btc_connect_tick() {
 				if (conn == NULL) {
 					continue;
 				}
+				ps_send_ann_disconnect(conn->address);
 				btc_connect_cleanup(conn);
-				printf("BYE BYE MOTHERFUCKER\n\r");
+				//printf("BYE BYE MOTHERFUCKER\n\r");
 				break;
 			case btc_event_proc_complete:
 				conn = btc_connect_get_connection(event->proc_complete.connection);
@@ -129,13 +130,12 @@ void btc_connect_tick() {
 		event = btc_event_next(&index);
 	}
 
-	if (SEND) {
-		btc_connect_tx_request(SEND_conn, pt_req_fare_id);
+	/*if (SEND) {
 		//btc_connect_tx_request(SEND_conn, pt_req_done);
 		SEND = 0;
-	}
+	}*/
 
-	if (DEATH_TO_AMERICA) {
+	/*if (DEATH_TO_AMERICA) {
 		printf("DEATH TO AMERICA\n\r");
 		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_fare_id);
 		//btc_connect_tx_request(DEATH_TO_AMERICA_conn, pt_req_done);
@@ -145,7 +145,7 @@ void btc_connect_tick() {
 		//	printf("Failed to disconnect: 0x%02X\n\r", ret);
 		//}
 		DEATH_TO_AMERICA = 0;
-	}
+	}*/
 }
 
 btc_connection_t* btc_connect_get(uint8_t index) {
@@ -165,14 +165,15 @@ btc_connection_t* btc_connect_get_connection(uint16_t connection) {
 	return NULL;
 }
 
-void btc_connect_request(uint8_t reqId, uint8_t* addr, uint8_t ps_fare) {
+void btc_connect_request(uint8_t reqId, uint8_t* addr) {
 	//printf("Connection requested: %d\n\r", reqId);
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		if (btc_connections[i].state == btc_connect_state_empty) {
 			btc_connections[i].state = btc_connect_state_scanning;
-			btc_connections[i].reqId = reqId;
-			btc_connections[i].ps_fare = ps_fare;
-			HAL_VTIMER_StartTimerMs(&btc_connections[i].timer, RSP_TIMEOUT);
+			btc_connections[i].reqId_connect = reqId;
+			btc_connections[i].reqId_fare = 0;
+			btc_connections[i].ps_rsp_connect = 0;
+			btc_connections[i].ps_rsp_fare = 0;
 			//printf("Address: ");
 			for (uint8_t j = 0; j < BTC_ADDRESS_LEN; j++) {
 				//printf("0x%02X ", addr[j]);
@@ -188,23 +189,26 @@ void btc_connect_request(uint8_t reqId, uint8_t* addr, uint8_t ps_fare) {
 void btc_connect_fare_request(uint8_t reqId, uint8_t* addr) {
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		if (btc_address_match(btc_connections[i].address, addr)) {
-			if (btc_connections[i].state != btc_connect_state_connected) {
-				printf("Exists but not in connected state: %02X\n\r", btc_connections[i].state);
-				ps_send_rsp_fare(reqId, BTC_UUID_ERROR);
-				return;
+			btc_connections[i].reqId_fare = reqId;
+			btc_connections[i].ps_rsp_fare = 0;
+			HAL_VTIMER_StartTimerMs(&btc_connections[i].timer, RSP_TIMEOUT);
+			if (btc_connections[i].state == btc_connect_state_connected) {
+				btc_connect_tx_request(&btc_connections[i], pt_req_fare_id);
 			}
-			btc_connections[i].reqId = reqId;
-			btc_connections[i].ps_fare = 1;
-			SEND = 1;
-			SEND_conn = &btc_connections[i];
 			return;
 		}
 	}
 
 	// If here, not connect exists
 	// Start new connection
-	printf("No connection found, create new one\n\r");
-	btc_connect_request(reqId, addr, 1);
+	//printf("No connection found, create new one\n\r");
+	btc_connect_request(0, addr);
+	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
+		if (btc_address_match(btc_connections[i].address, addr)) {
+			btc_connections[i].reqId_fare = reqId;
+			btc_connections[i].ps_rsp_fare = 0;
+		}
+	}
 }
 
 void btc_connect_start(uint8_t addrType, uint8_t* addr) {
@@ -238,6 +242,13 @@ void btc_connect_finish(uint16_t connection, uint8_t* addr) {
 	}
 }
 
+void btc_connect_disconnect(btc_connection_t* conn) {
+	tBleStatus ret = hci_disconnect(conn->connection, 0x13);
+	if (ret) {
+		printf("Failed to disconnect: 0x%02X\n\r", ret);
+	}
+}
+
 void btc_connect_proc_complete(btc_connection_t* conn, uint8_t error) {
 	if(error != BLE_STATUS_SUCCESS){
 		printf("Procedure terminated with error 0x%02X (0x%04X) state=0x%02X.\r\n",
@@ -262,12 +273,14 @@ void btc_connect_proc_complete(btc_connection_t* conn, uint8_t error) {
 			break;
 		case btc_connect_state_enable_notifications:
 			conn->state = btc_connect_state_connected;
-			printf("State: connected\n\r");
-			if (conn->ps_fare) {
-				SEND = 1;
-				SEND_conn = conn;
+			if (conn->reqId_connect != 0 && !conn->ps_rsp_connect) {
+				// TODO: Add state output
+				conn->ps_rsp_connect = 1;
+				ps_send_rsp_connect(conn->reqId_connect, 0);
 			}
-			//btc_connect_tx_request(conn, pt_req_fare_id);
+			if (conn->reqId_fare != 0) {
+				btc_connect_tx_request(conn, pt_req_fare_id);
+			}
 			break;
 		case btc_connect_state_connected:
 			// Response to write
@@ -365,14 +378,15 @@ void btc_connect_rx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
 			break;
 
 	    case pt_msg_fare_id_type:
-	    	if (conn->ps_rsp) {
-	    		conn->ps_rsp = 0;
-	    		ps_send_rsp_fare(conn->reqId, msg->data.fare_id.uuid);
+	    	if (!conn->ps_rsp_fare && conn->reqId_fare != 0) {
+	    		conn->ps_rsp_fare = 1;
+	    		ps_send_rsp_fare(conn->reqId_fare, msg->data.fare_id.uuid);
 	    	}
 	    	//btc_connect_tx_request(conn, pt_req_done);
-	    	DEATH_TO_AMERICA = 1;
-	    	DEATH_TO_AMERICA_connection = conn->connection;
-	    	DEATH_TO_AMERICA_conn = conn;
+	    	//DEATH_TO_AMERICA = 1;
+	    	//DEATH_TO_AMERICA_connection = conn->connection;
+	    	//DEATH_TO_AMERICA_conn = conn;
+	    	btc_connect_disconnect(conn);
 	    	break;
 
 	    default:
@@ -387,13 +401,15 @@ void btc_connect_cleanup(btc_connection_t* conn) {
 	for (uint8_t i = 0; i < BTC_ADDRESS_LEN; i++) {
 		conn->address[i] = 0;
 	}
-	conn->reqId = 99;
+	conn->reqId_connect = 0;
+	conn->reqId_fare = 0;
 	conn->service_start = 0;
 	conn->service_end = 0;
 	conn->tx = 0;
 	conn->rx = 0;
 	conn->state = btc_connect_state_empty;
-	conn->ps_rsp = 1;
+	conn->ps_rsp_connect = 0;
+	conn->ps_rsp_fare = 0;
 }
 
 void btc_connect_timeout(void* data) {
@@ -401,14 +417,16 @@ void btc_connect_timeout(void* data) {
 	btc_connection_t* conn = (btc_connection_t*)(data-0x10);
 	if (conn->state != btc_connect_state_empty) {
 		//printf("Timeout connection 0x%04X: state=0x%02X\n\r", conn->connection, conn->state);
-		if (conn->ps_fare) {
-			if (conn->ps_rsp) {
-				conn->ps_rsp = 0;
-				ps_send_rsp_fare(conn->reqId, BTC_UUID_ERROR);
-			}
-
-			btc_connect_cleanup(conn);
+		if (!conn->ps_rsp_connect && conn->reqId_connect != 0) {
+			conn->ps_rsp_connect = 1;
+			ps_send_rsp_fare(conn->reqId_connect, BTC_UUID_ERROR);
 		}
+		if (!conn->ps_rsp_fare && conn->reqId_fare != 0) {
+			conn->ps_rsp_fare = 1;
+			ps_send_rsp_fare(conn->reqId_fare, BTC_UUID_ERROR);
+		}
+
+		btc_connect_disconnect(conn);
 	}
 }
 
@@ -458,13 +476,11 @@ void aci_att_clt_read_by_type_resp_event(uint16_t Connection_Handle,
 				//print_uuid(&Handle_Value_Pair_Data[i+5]);
 				if(memcmp(&Handle_Value_Pair_Data[i+5], BTC_GATT_CHR_TX_UUID, 16) == 0){
 					conn->tx = handle;
-					printf("Tx handle: 0x%04X\n\r", conn->tx);
-					//PRINTF("TX Char handle for slave %d: 0x%04X\r\n", slave_index, handle);
+					//printf("Tx handle: 0x%04X\n\r", conn->tx);
 				}
 				else if(memcmp(&Handle_Value_Pair_Data[i+5], BTC_GATT_CHR_RX_UUID, 16) == 0){
 					conn->rx = handle;
-					printf("Rx handle: 0x%04X\n\r", conn->rx);
-					//PRINTF("RX Char Handle for slave %d: 0x%04X\r\n", slave_index, handle);
+					//printf("Rx handle: 0x%04X\n\r", conn->rx);
 				}
 			}
 		}

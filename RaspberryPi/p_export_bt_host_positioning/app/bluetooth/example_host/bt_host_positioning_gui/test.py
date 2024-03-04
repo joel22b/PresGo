@@ -3,35 +3,46 @@ from uuid import UUID
 import time
 import protocol_serial as ps
 
+#address = "0C4314F4627F"
+address = "4C5BB3CA9C47"
+#address = "4C5BB3CA9C43"
+
 def door_announcement(inDoorway: bool):
   print("Announcement inDoorway: " + str(inDoorway))
 
 def init_announcement(flags: int):
   ps.init_printout(flags)
+  print("Connect")
+  ptSerial.send_request_connect(address, get_connect)
 
-def get_connect():
-  print("huh")
+def disconnect_announcement(address: str):
+  print("Disconnected from: " + address)
+
+def get_connect(state: int):
+  print("Connected: state=" + str(state))
+  print("Fare")
+  ptSerial.send_request_fare(address, get_fare_id)
 
 def get_fare_id(uuid: UUID):
-  end = time.time()
-  print(end - start)
+  #end = time.time()
+  #print(end - start)
   print("Fare ID: " + str(uuid))
-  #time.sleep(10)
+  global send
+  send = True
   #ptSerial.send_request_fare("0C4314F4627F", get_fare_id)
 
 global ptSerial
-ptSerial = ps.ProtocolSerial("COM9", door_announcement, init_announcement)
+ptSerial = ps.ProtocolSerial("COM8", door_announcement, init_announcement, disconnect_announcement)
 
-time.sleep(2)
-print("Connect")
-ptSerial.send_request_connect("0C4314F4627F", get_connect)
-
-time.sleep(10)
-print("Fare")
-start = time.time()
-ptSerial.send_request_fare("0C4314F4627F", get_fare_id)
+#start = time.time()
 #time.sleep(1)
 #ptSerial.send_request_fare("0C4314F4627E", get_fare_id)
-
+global send
+send = False
 while True:
+  if send:
+    send = False
+    time.sleep(10)
+    print("Connect")
+    ptSerial.send_request_connect(address, get_connect)
   pass

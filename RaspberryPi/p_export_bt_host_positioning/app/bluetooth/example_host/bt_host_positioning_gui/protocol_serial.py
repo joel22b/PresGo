@@ -8,20 +8,25 @@ from uuid import UUID
 class ProtocolSerial:
     running = True
     serialPort = None
-    reqId = 0
+    reqId = 1
     callbacks = []
     callbackAnnouncementDoor = None
     callbackAnnouncementInit = None
+    callbackAnnouncementDisconnect = None
 
-    def __init__(self, port: str, callbackAnnouncementDoor, callbackAnnouncementInit):
+    def __init__(self, port: str, callbackAnnouncementDoor, callbackAnnouncementInit, callbackAnnouncementDisconnect):
         self.callbackAnnouncementDoor = callbackAnnouncementDoor
         self.callbackAnnouncementInit = callbackAnnouncementInit
+        self.callbackAnnouncementDisconnect = callbackAnnouncementDisconnect
         # setup serial port for communicating with bluenrg board
         # /dev/ttyACM0 if plugged in before or without antenna array, else /dev/ttyACM1
         self.serialPort = serial.Serial(port=port, baudrate=115200, timeout=10)
         # serial read on separate thread to not block main gui thread
         thread_ser_read = threading.Thread(target=self.serial_read_thread, daemon=True, args=())
         thread_ser_read.start()
+
+        for i in range(self.reqId):
+            self.callbacks.append(None)
     
     def serial_read_thread(self):
         while self.running:
@@ -40,8 +45,12 @@ class ProtocolSerial:
         if psm.MsgIdentifier.Rsp.name == msgIdentifierStr:
             reqId = int(raw[5:7], 16)
             msgTypeStr = raw[8:12]
-            if psm.MsgType.Fare.name == msgTypeStr:
-                self.callbacks[reqId](UUID(raw[13:45]))
+            if psm.MsgType.Conn.name == msgTypeStr:
+                state = int(raw[13:21], 16)
+                self.callbacks[reqId](state)
+            elif psm.MsgType.Fare.name == msgTypeStr:
+                uuid = UUID(raw[13:45])
+                self.callbacks[reqId](uuid)
             elif psm.MsgType.Door.name == msgTypeStr:
                 inDoorway = False
                 if raw[13] == 'T':
@@ -58,6 +67,8 @@ class ProtocolSerial:
                 self.callbackAnnouncementDoor(inDoorway)
             elif psm.MsgType.Init.name == msgTypeStr:
                 self.callbackAnnouncementInit(int(raw[10:12], 16))
+            elif psm.MsgType.Disc.name == msgTypeStr:
+                self.callbackAnnouncementDisconnect(raw[10:22])
     
     def get_request_id(self) -> int:
         tmp = self.reqId
