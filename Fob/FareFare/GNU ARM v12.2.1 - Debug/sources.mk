@@ -26,5 +26,7 @@ gecko_sdk_4.4.1/platform/driver/debug/src \
 gecko_sdk_4.4.1/platform/emlib/src \
 gecko_sdk_4.4.1/platform/service/device_init/src \
 gecko_sdk_4.4.1/platform/service/iostream/src \
+gecko_sdk_4.4.1/platform/service/sleeptimer/src \
 gecko_sdk_4.4.1/platform/service/system/src \
+state_machine \
 

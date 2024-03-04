@@ -29,6 +29,7 @@ component:
 - {id: sl_system}
 - {id: device_init}
 - {id: iostream_swo}
+- {id: sleeptimer}
 - {id: EFR32BG22C224F512IM40}
 define:
 - {name: DEBUG_EFM}

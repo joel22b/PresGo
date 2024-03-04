@@ -17,12 +17,17 @@
 
 #include "app_log.h"
 
+#include "state_machine/state_machine.h"
+
 /***************************************************************************//**
  * Initialize application.
  ******************************************************************************/
 void app_init(void)
 {
-  app_log("Testing");
+  app_log_info("Initialization started\n\r");
+  sm_init();
+
+  sm_update_state(SM_STATE_CHECK_FOR_BUS, false);
 }
 
 /***************************************************************************//**
@@ -30,5 +35,5 @@ void app_init(void)
  ******************************************************************************/
 void app_process_action(void)
 {
-  app_log("Ahhhh");
+  sm_process();
 }

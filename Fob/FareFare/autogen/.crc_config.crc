@@ -6,3 +6,4 @@ sl_device_init_dcdc_config.h=-1580606003
 sl_device_init_emu_config.h=622680131
 sl_iostream_swo_config.h=-928064663
 sl_memory_config.h=687128566
+sl_sleeptimer_config.h=1360009810
