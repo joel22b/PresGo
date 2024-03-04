@@ -109,12 +109,12 @@ void ff_msg_req(uint8_t connection, pt_msg_t* msg) {
     case pt_req_fare_id:
       pt_msg_t msg;
       msg.type = pt_msg_fare_id_type;
-      app_log("UUID: ");
+      //app_log("UUID: ");
       for (uint8_t i = 0; i < UUID_LEN; i++) {
-          app_log("0x%02X ", fare_uuid[i]);
+          //app_log("0x%02X ", fare_uuid[i]);
           msg.data.fare_id.uuid[i] = fare_uuid[i];
       }
-      app_log("\n\rDone\n\r");
+      //app_log("\n\rDone\n\r");
       sl_status_t ret_val = ff_tx_data(connection, &msg);
       if (ret_val != SL_STATUS_OK) {
           app_log_info("Failed to send fare id message to connection %d: %lu\n\r", connection, ret_val);

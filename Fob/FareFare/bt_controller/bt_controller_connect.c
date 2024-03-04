@@ -42,14 +42,14 @@ uint8_t* btc_connect_get_address(uint8_t connection) {
 void
 btc_connect_openned (sl_bt_evt_connection_opened_t *evt_connect_openned)
 {
-  app_log_info("Connection opened: %d\n\r", evt_connect_openned->connection);
-  app_log_info("Client address: %02X:%02X:%02X:%02X:%02X:%02X\n\r",
+  //app_log_info("Connection opened: %d\n\r", evt_connect_openned->connection);
+  /*app_log_info("Client address: %02X:%02X:%02X:%02X:%02X:%02X\n\r",
                evt_connect_openned->address.addr[5],
                evt_connect_openned->address.addr[4],
                evt_connect_openned->address.addr[3],
                evt_connect_openned->address.addr[2],
                evt_connect_openned->address.addr[1],
-               evt_connect_openned->address.addr[0]);
+               evt_connect_openned->address.addr[0]);*/
   connection_count++;
   // Continue advertising if the stack allows further connections.
   if (connection_count < SL_BT_CONFIG_MAX_CONNECTIONS)
@@ -60,7 +60,7 @@ btc_connect_openned (sl_bt_evt_connection_opened_t *evt_connect_openned)
       app_assert_status (ret_val);*/
 
       btc_adv_start(btc_adv_services_legacy);
-      app_log_info("Continue advertising\n\r");
+      //app_log_info("Continue advertising\n\r");
     }
 
   for (uint8_t i = 0; i < ADDRESS_LEN; i++) {
@@ -71,8 +71,8 @@ btc_connect_openned (sl_bt_evt_connection_opened_t *evt_connect_openned)
 void
 btc_connect_closed (sl_bt_evt_connection_closed_t *evt_connect_closed)
 {
-  app_log_info("Connection closed: %d\n\r",
-               evt_connect_closed->connection);
+  //app_log_info("Connection closed: %d\n\r",
+  //             evt_connect_closed->connection);
 
   // Clear connection handle
   btc_connect_handle_t* handle = btc_get_connect_handle(evt_connect_closed->connection);
@@ -89,19 +89,19 @@ btc_connect_closed (sl_bt_evt_connection_closed_t *evt_connect_closed)
     {
       // Restart advertising after client has disconnected.
       btc_adv_start(btc_adv_services_legacy);
-      app_log_info("Restart advertising\n");
+      //app_log_info("Restart advertising\n");
     }
   connection_count--;
 }
 
 void btc_connect_parameters(sl_bt_evt_connection_parameters_t* evt_connect_parameters) {
-  app_log_info("Connection Parameters: Connection handle %02X\n\r", evt_connect_parameters->connection);
+  //app_log_info("Connection Parameters: Connection handle %02X\n\r", evt_connect_parameters->connection);
   if (btc_get_connect_handle(evt_connect_parameters->connection)->service == 0x00000000) {
       // No service connected, discover some
-      app_log_info("Trying to discover services\n\r");
+      //app_log_info("Trying to discover services\n\r");
       sl_status_t ret_val = sl_bt_gatt_discover_primary_services(evt_connect_parameters->connection);
       if (ret_val != SL_STATUS_OK) {
-          app_log_info("Failed to discover remote gatt services: %02X\n\r", ret_val);
+          //app_log_info("Failed to discover remote gatt services: %02X\n\r", ret_val);
       }
   }
 }
@@ -122,7 +122,7 @@ void btc_connect_gatt_service(sl_bt_evt_gatt_service_t* evt_gatt_service) {
           evt_gatt_service->connection,
           evt_gatt_service->service);
       if (ret_val != SL_STATUS_OK && ret_val != SL_STATUS_IN_PROGRESS) {
-          app_log_info("Failed to discover remote gatt services: %02X\n\r", ret_val);
+          //app_log_info("Failed to discover remote gatt services: %02X\n\r", ret_val);
       }
 
       // Update connection handle with service id
@@ -150,7 +150,7 @@ sl_status_t btc_connect_tx_data(uint8_t connection, uint8array* data) {
 }
 
 void btc_connect_rx_data(sl_bt_evt_gatt_server_user_write_request_t* evt_write_request) {
-  app_log_info("Received data: opcode 0x%02X\n\r", evt_write_request->att_opcode);
+  //app_log_info("Received data: opcode 0x%02X\n\r", evt_write_request->att_opcode);
   if (evt_write_request->att_opcode == sl_bt_gatt_write_request) {
       sl_status_t ret_val = sl_bt_gatt_server_send_user_write_response(
           evt_write_request->connection, evt_write_request->characteristic, 0);
