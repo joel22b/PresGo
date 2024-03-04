@@ -7,7 +7,7 @@
 
 #include "state_machine.h"
 
-//#include "fare_fob/config.h"
+#include "fare_fob/config.h"
 
 void sm_state_sleep_callback(sl_sleeptimer_timer_handle_t *handle, void *data)
 {

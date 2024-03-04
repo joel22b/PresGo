@@ -25,10 +25,16 @@ include:
 sdk: {id: gecko_sdk, version: 4.4.1}
 toolchain_settings: []
 component:
+- {id: gatt_service_cte_silabs}
+- {id: gatt_service_cte}
+- {id: bluetooth_feature_extended_scanner}
+- {id: iostream_swo}
+- {id: bluetooth_feature_legacy_advertiser}
+- {id: device_init}
+- {id: bluetooth_feature_aoa_transmitter}
 - {id: app_log}
 - {id: sl_system}
-- {id: device_init}
-- {id: iostream_swo}
+- {id: bluetooth_feature_connection}
 - {id: sleeptimer}
 - {id: EFR32BG22C224F512IM40}
 define:

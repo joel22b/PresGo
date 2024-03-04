@@ -8,10 +8,9 @@
 #include "state_machine.h"
 
 #include "app_log.h"
-//#include "sl_simple_led_instances.h"
 
-//#include "bt_controller/bt_controller.h"
-//#include "fare_fob/config.h"
+#include "bt_controller/bt_controller.h"
+#include "fare_fob/config.h"
 
 void sm_state_check_for_bus_callback(sl_sleeptimer_timer_handle_t *handle, void *data)
 {
@@ -22,10 +21,9 @@ void sm_state_check_for_bus_callback(sl_sleeptimer_timer_handle_t *handle, void 
 }
 
 void sm_state_check_for_bus_enter() {
-  app_log_info("SM: Check for Bus entered");
-  //btc_adv_scanner_start();
+  app_log_info("SM: Check for Bus entered\n\r");
 
-  //sl_led_turn_on(&sl_led_led0);
+  btc_adv_scanner_start();
 
   sl_status_t ret_val = sm_timer_start(SM_DURATION_CHECK_FOR_BUS,
                                        sm_state_check_for_bus_callback,
@@ -37,10 +35,7 @@ void sm_state_check_for_bus_enter() {
 }
 
 void sm_state_check_for_bus_exit() {
-  app_log_info("SM: Check for Bus exited");
-  //btc_adv_scanner_stop();
-
-  //sl_led_turn_off(&sl_led_led0);
+  btc_adv_scanner_stop();
 
   sl_status_t ret_val = sm_timer_stop();
   if (ret_val != SL_STATUS_OK) {

@@ -16,8 +16,11 @@
  ******************************************************************************/
 
 #include "app_log.h"
+#include "sl_bluetooth.h"
 
 #include "state_machine/state_machine.h"
+#include "fare_fob/fare_fob.h"
+#include "bt_controller/bt_controller.h"
 
 /***************************************************************************//**
  * Initialize application.
@@ -26,6 +29,7 @@ void app_init(void)
 {
   app_log_info("Initialization started\n\r");
   sm_init();
+  ff_init();
 
   sm_update_state(SM_STATE_CHECK_FOR_BUS, false);
 }
@@ -36,4 +40,9 @@ void app_init(void)
 void app_process_action(void)
 {
   sm_process();
+}
+
+void sl_bt_on_event(sl_bt_msg_t *evt)
+{
+  btc_handle_event(evt);
 }

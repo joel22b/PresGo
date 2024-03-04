@@ -7,9 +7,9 @@
 
 #include "state_machine.h"
 
-//#include "bt_controller/bt_controller.h"
+#include "bt_controller/bt_controller.h"
 
 void sm_state_boot_exit() {
-  app_log_info("SM: Boot exited");
-  //btc_adv_stop(btc_adv_services_standard);
+  app_log_info("SM: Boot exited\n\r");
+  btc_adv_stop(btc_adv_services_standard);
 }

@@ -9,10 +9,6 @@
 
 #include "state_machine_types.h"
 
-#define SM_DURATION_CHECK_FOR_BUS 100   //ms
-#define SM_DURATION_SLEEP         5000  //ms
-#define SM_DURATION_RAPID_ADV     1000  //ms
-
 /* ===========================================
  * State Machine Generic Functions
  *

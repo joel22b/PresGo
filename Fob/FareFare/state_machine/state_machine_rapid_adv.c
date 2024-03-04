@@ -7,8 +7,8 @@
 
 #include "state_machine.h"
 
-//#include "bt_controller/bt_controller.h"
-//#include "fare_fob/config.h"
+#include "bt_controller/bt_controller.h"
+#include "fare_fob/config.h"
 
 void sm_state_rapid_adv_callback(sl_sleeptimer_timer_handle_t *handle, void *data)
 {
@@ -19,8 +19,9 @@ void sm_state_rapid_adv_callback(sl_sleeptimer_timer_handle_t *handle, void *dat
 }
 
 void sm_state_rapid_adv_enter() {
-  app_log_info("SM: Rapid Adv entered");
-  //btc_adv_start(btc_adv_services_standard);
+  app_log_info("SM: Rapid Adv entered\n\r");
+
+  btc_adv_start(btc_adv_services_standard);
 
 #ifndef DEBUG_JUST_ADV
   sl_status_t ret_val = sm_timer_start(SM_DURATION_RAPID_ADV,
@@ -33,8 +34,7 @@ void sm_state_rapid_adv_enter() {
 }
 
 void sm_state_rapid_adv_exit() {
-  app_log_info("SM: Rapid Adv exited");
-  //btc_adv_stop(btc_adv_services_standard);
+  btc_adv_stop(btc_adv_services_standard);
 
   sl_status_t ret_val = sm_timer_stop();
   if (ret_val != SL_STATUS_OK) {

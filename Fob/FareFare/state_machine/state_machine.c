@@ -9,7 +9,7 @@
 
 #include "sl_status.h"
 
-//#include "fare_fob/config.h"
+#include "fare_fob/config.h"
 
 // Variables
 sm_state_t curr_state;
