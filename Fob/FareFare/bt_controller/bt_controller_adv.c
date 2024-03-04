@@ -14,6 +14,7 @@
 #include "state_machine/state_machine.h"
 #include "fare_fob/fare_fob.h"
 
+
 static uint8_t advertising_set_handle = 0xff;
 
 void
@@ -22,14 +23,14 @@ btc_adv_init ()
   // Create an advertising set.
   sl_status_t ret_val = sl_bt_advertiser_create_set (&advertising_set_handle);
   if (ret_val != SL_STATUS_OK) {
-      app_log_info("Failed to create advertising set: 0x%04X\n\r", ret_val);
+      app_log_info("Failed to create advertising set: %lu\n\r", ret_val);
   }
 
   // Generate data for advertising
   ret_val = sl_bt_legacy_advertiser_generate_data (
       advertising_set_handle, sl_bt_advertiser_general_discoverable);
   if (ret_val != SL_STATUS_OK) {
-      app_log_info("Failed to generate advertising data: 0x%04X\n\r", ret_val);
+      app_log_info("Failed to generate advertising data: %lu\n\r", ret_val);
   }
 
   // Set advertising interval to 100ms.
@@ -54,7 +55,7 @@ btc_adv_start (btc_adv_services_t adv_services)
       ret_val = adv_cte_start ();
       if (ret_val != SL_STATUS_OK)
       {
-          app_log_info("Started legacy adv: ret=%04X\n\r", ret_val);
+          app_log_info("Started legacy adv: ret=%lu\n\r", ret_val);
       }
   }
 
@@ -65,7 +66,7 @@ btc_adv_start (btc_adv_services_t adv_services)
           advertising_set_handle, sl_bt_advertiser_connectable_scannable);
       if (ret_val != SL_STATUS_OK)
       {
-          app_log_info("Started legacy adv: ret=%04X\n\r", ret_val);
+          app_log_info("Started legacy adv: ret=%lu\n\r", ret_val);
       }
   }
 }
@@ -80,7 +81,7 @@ btc_adv_stop (btc_adv_services_t adv_services)
       //app_log_info("Stopped adv CTE\n\r");
     ret_val = sl_bt_advertiser_stop (advertising_set_handle);
     if (ret_val != SL_STATUS_OK) {
-      app_log_info("Stopped legacy adv: ret=%04X\n\r", ret_val);
+      app_log_info("Stopped legacy adv: ret=%lu\n\r", ret_val);
     }
   }
 
@@ -88,7 +89,7 @@ btc_adv_stop (btc_adv_services_t adv_services)
       //app_log_info("Stopped adv Legacy\n\r");
       ret_val = adv_cte_stop ();
       if (ret_val != SL_STATUS_OK) {
-          app_log_info("Stopped cte adv: ret=%04X\n\r", ret_val);
+          app_log_info("Stopped cte adv: ret=%lu\n\r", ret_val);
       }
   }
 }

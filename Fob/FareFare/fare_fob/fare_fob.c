@@ -117,7 +117,7 @@ void ff_msg_req(uint8_t connection, pt_msg_t* msg) {
       app_log("\n\rDone\n\r");
       sl_status_t ret_val = ff_tx_data(connection, &msg);
       if (ret_val != SL_STATUS_OK) {
-          app_log_info("Failed to send fare id message to connection %d: 0x%02X\n\r", connection, ret_val);
+          app_log_info("Failed to send fare id message to connection %d: %lu\n\r", connection, ret_val);
       }
       break;
 
@@ -131,7 +131,7 @@ void ff_msg_req(uint8_t connection, pt_msg_t* msg) {
       break;
 
     default:
-      app_log_info("Unhandled request id: 0x%02X\n\r");
+      app_log_info("Unhandled request id:");
       break;
   }
 }

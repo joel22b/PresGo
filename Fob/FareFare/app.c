@@ -31,7 +31,7 @@ void app_init(void)
   sm_init();
   ff_init();
 
-  sm_update_state(SM_STATE_CHECK_FOR_BUS, false);
+//  sm_update_state(SM_STATE_CHECK_FOR_BUS, false);
 }
 
 /***************************************************************************//**
