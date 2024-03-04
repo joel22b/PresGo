@@ -37,6 +37,10 @@ void btc_handle_event(sl_bt_msg_t *evt) {
         // Nothing needs to be done
         break;
 
+      case sl_bt_evt_connection_data_length_id:
+        // Indicates that length of data and/or time to receive data has changed
+        break;
+
       // -------------------------------
       // This event indicates that a new connection was opened.
       case sl_bt_evt_connection_opened_id:

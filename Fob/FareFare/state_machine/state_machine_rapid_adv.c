@@ -19,8 +19,6 @@ void sm_state_rapid_adv_callback(sl_sleeptimer_timer_handle_t *handle, void *dat
 }
 
 void sm_state_rapid_adv_enter() {
-  app_log_info("SM: Rapid Adv entered\n\r");
-
   btc_adv_start(btc_adv_services_standard);
 
 #ifndef DEBUG_JUST_ADV

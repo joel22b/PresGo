@@ -21,8 +21,6 @@ void sm_state_check_for_bus_callback(sl_sleeptimer_timer_handle_t *handle, void 
 }
 
 void sm_state_check_for_bus_enter() {
-  app_log_info("SM: Check for Bus entered\n\r");
-
   btc_adv_scanner_start();
 
   sl_status_t ret_val = sm_timer_start(SM_DURATION_CHECK_FOR_BUS,

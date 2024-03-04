@@ -150,7 +150,14 @@ sl_status_t btc_connect_tx_data(uint8_t connection, uint8array* data) {
 }
 
 void btc_connect_rx_data(sl_bt_evt_gatt_server_user_write_request_t* evt_write_request) {
-  app_log_info("Received data\n\r");
+  app_log_info("Received data: opcode 0x%02X\n\r", evt_write_request->att_opcode);
+  if (evt_write_request->att_opcode == sl_bt_gatt_write_request) {
+      sl_status_t ret_val = sl_bt_gatt_server_send_user_write_response(
+          evt_write_request->connection, evt_write_request->characteristic, 0);
+      if (ret_val != SL_STATUS_OK) {
+          app_log_info("Failed to send response to write: %lu\n\r", ret_val);
+      }
+  }
   btc_connect_handle_t* handle = btc_get_connect_handle(evt_write_request->connection);
   if (handle->rx == 0x0000) {
       handle->rx = evt_write_request->characteristic;
