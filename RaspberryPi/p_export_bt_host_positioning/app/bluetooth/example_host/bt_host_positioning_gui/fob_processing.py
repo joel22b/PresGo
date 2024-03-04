@@ -9,7 +9,10 @@ from threading import Lock
 import tkinter_gui
 from uuid import UUID
 
-ANTENNA_ARRAY_PORT = '/dev/ttyACM1'
+BUS_NODE_WITH_CONNECTION_PORT = '/dev/ttyACM1' #outermost (triggered first upon entry)
+BUS_NODE_DISTANCE_SENSOR_ONLY_PORT = '/dev/ttyACM2' #innermost distance sensor (triggered first upon exit)
+
+
 
 gui = None
 fob_processing = None
@@ -19,11 +22,14 @@ class FobProcessing:
     self.lock = Lock()
     self.in_cylinder = {}
     self.tags_being_fare_checked = []
-    self.someone_in_doorway = False
+    self.someone_in_doorway1 = False
+    self.someone_in_doorway2 = False
+
     self.processed_count = 0
     self.gui = gui
     self.mqtt = mqtt_client.MQTTClient(self)
-    self.pt_serial = protocol_serial.ProtocolSerial(ANTENNA_ARRAY_PORT, self.door_announcement, self.init_announcement) 
+    self.pt_serial = protocol_serial.ProtocolSerial(BUS_NODE_WITH_CONNECTION_PORT, self.door_announcement, self.init_announcement) 
+    self.pt_serial_distance = protocol_serial.ProtocolSerial(BUS_NODE_DISTANCE_SENSOR_ONLY_PORT, self.door_announcement_2, self.init_announcement) 
 
   def is_point_inside_cylinder(self, x, y, z, radius, height):
     in_circle = x ** 2 + y ** 2 <= radius ** 2
@@ -61,13 +67,30 @@ class FobProcessing:
   def door_announcement(self, inDoorway: bool):
     print("Announcement inDoorway: " + str(inDoorway))
     with self.lock:
-      self.someone_in_doorway = inDoorway
+      self.someone_in_doorway1 = inDoorway
       if inDoorway:
-        return
+        #entry case
+        if self.someone_in_doorway2:
+          self.gui.increment_person_counter()
+        else:
+          print("ERROR: Both sensors are false on entry")
+
       if self.processed_count == 0:
         self.gui.enqueue_state(tkinter_gui.State.FAILURE, 'Valid payment fob not found.')
       else:
         self.processed_count = 0
+
+  def door_announcement_2(self, inDoorway: bool):
+    print("Announcement inDoorway: " + str(inDoorway))
+    with self.lock:
+      self.someone_in_doorway2 = inDoorway
+      if inDoorway:
+        if self.someone_in_doorway1:
+          self.gui.decrement_person_counter()
+        else:
+          print("ERROR: Both sensors are false on person exit")
+   
+
 
   def init_announcement(self, flags: int):
     protocol_serial.init_printout(flags)
