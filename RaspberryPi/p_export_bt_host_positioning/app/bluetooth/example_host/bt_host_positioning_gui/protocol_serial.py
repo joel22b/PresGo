@@ -120,7 +120,15 @@ class ProtocolSerial:
         msg.create()
         self.serial_write(msg)
 
-def init_printout(flags: int):
-    print("Initialization complete:")
-    for flag in psm.InitFlags:
-        print("\t" + flag.name.replace("_", " ") + ": " + str(bool(flag.value & flags)))
+    def init_printout(flags: int):
+        print("Initialization complete:")
+        for flag in psm.InitFlags:
+            print("\t" + flag.name.replace("_", " ") + ": " + str(bool(flag.value & flags)))
+
+
+    def check_and_set_error_status(self, flags:int):
+        print("Checking Errors in Protocol Serial:")
+        for flag in psm.InitFlags:
+            if not (flag.value&flags):
+                print("Error in ", flag.name)
+                self.gui.set_system_error_status()
