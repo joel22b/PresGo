@@ -9,7 +9,7 @@ address = "4C5BB3CA9C47"
 #address = "4C5BB3CA9C43"
 
 def door_announcement(inDoorway: bool):
-  #print("Announcement inDoorway: " + str(inDoorway))
+  print("Announcement inDoorway: " + str(inDoorway))
   pass
 
 def init_announcement(flags: int):
@@ -45,11 +45,13 @@ def get_fare_id(uuid: UUID):
   #ptSerial.send_request_fare("0C4314F4627F", get_fare_id)
 
 global ptSerial
-ptSerial = ps.ProtocolSerial("COM9", door_announcement, init_announcement, disconnect_announcement, None)
+ptSerial = ps.ProtocolSerial("COM8", door_announcement, init_announcement, disconnect_announcement, None)
 #ptSerial.debug = True
 
 global fareSystem
 fareSystem = fs.FareSystem()
+
+ptSerial.send_announcement_kill()
 
 #start = time.time()
 #time.sleep(1)
