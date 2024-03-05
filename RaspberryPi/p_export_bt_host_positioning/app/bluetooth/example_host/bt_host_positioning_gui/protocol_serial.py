@@ -15,10 +15,11 @@ class ProtocolSerial:
     callbackAnnouncementInit = None
     callbackAnnouncementDisconnect = None
 
-    def __init__(self, port: str, callbackAnnouncementDoor, callbackAnnouncementInit, callbackAnnouncementDisconnect):
+    def __init__(self, port: str, callbackAnnouncementDoor, callbackAnnouncementInit, callbackAnnouncementDisconnect, gui):
         self.callbackAnnouncementDoor = callbackAnnouncementDoor
         self.callbackAnnouncementInit = callbackAnnouncementInit
         self.callbackAnnouncementDisconnect = callbackAnnouncementDisconnect
+        self.gui = gui
         # setup serial port for communicating with bluenrg board
         # /dev/ttyACM0 if plugged in before or without antenna array, else /dev/ttyACM1
         self.serialPort = serial.Serial(port=port, baudrate=115200, timeout=10)
@@ -30,13 +31,16 @@ class ProtocolSerial:
             self.callbacks.append(None)
     
     def serial_read_thread(self):
-        while self.running:
-            read_data = self.serialPort.readline()
-            if read_data: 
-                cmd = read_data.decode().rstrip().replace("\r", "")
-                if self.debug:
-                    print(f"Received: {cmd}")
-                self.decode_message(cmd)
+        try:
+            while self.running:
+                read_data = self.serialPort.readline()
+                if read_data: 
+                    cmd = read_data.decode().rstrip().replace("\r", "")
+                    if self.debug:
+                        print(f"Received: {cmd}")
+                    self.decode_message(cmd)
+        except Exception as e:
+            self.gui.set_system_error_status()
 
     def serial_write(self, msg: psm.Message):
         if self.debug:
