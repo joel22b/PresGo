@@ -27,8 +27,8 @@ def get_fare_id(uuid: UUID):
   #end = time.time()
   #print(end - start)
   print("Fare ID: " + str(uuid))
-  global send
-  send = True
+  #global send
+  #send = True
   #ptSerial.send_request_fare("0C4314F4627F", get_fare_id)
 
 global ptSerial
@@ -44,5 +44,6 @@ while True:
     send = False
     time.sleep(10)
     print("Connect")
+    #address = "4C5BB3CA9C43"
     ptSerial.send_request_connect(address, get_connect)
   pass

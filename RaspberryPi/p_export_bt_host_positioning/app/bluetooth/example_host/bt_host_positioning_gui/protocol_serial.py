@@ -44,6 +44,9 @@ class ProtocolSerial:
         msgIdentifierStr = raw[1:4]
         if psm.MsgIdentifier.Rsp.name == msgIdentifierStr:
             reqId = int(raw[5:7], 16)
+            if reqId >= len(self.callbacks):
+                print("ReqId out of range, ignoring: reqId="+str(reqId)+" callbacks len="+str(len(self.callbacks)))
+                return
             msgTypeStr = raw[8:12]
             if psm.MsgType.Conn.name == msgTypeStr:
                 state = int(raw[13:21], 16)
