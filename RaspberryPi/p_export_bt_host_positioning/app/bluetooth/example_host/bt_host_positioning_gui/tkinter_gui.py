@@ -52,7 +52,7 @@ class TkinterGUI:
     self.status_text = self.canvas.create_text(WINDOW_WIDTH_PX-WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.system_status.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill=self.system_status.value.color, anchor='se')
     self.status_template_text = self.canvas.create_text(self.canvas.bbox(self.status_text)[0], WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=STATUS_TEXT_TEMPLATE, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='se')
     lower_text_bounding_box = self.canvas.bbox(self.person_counter_text)
-    self.canvas.create_window(WINDOW_WIDTH_PX/2, WINDOW_HEIGHT_PX-4, window=tkinter.Button(self.root, text=RESET_BUTTON_TEXT, font=(FONT, FONT_SIZE, FONT_WEIGHT), activebackground=State.FAILURE.value.color, highlightthickness=0, borderwidth=0, command=self.reset), anchor='s')
+    self.canvas.create_window(WINDOW_WIDTH_PX/2, WINDOW_HEIGHT_PX-6, window=tkinter.Button(self.root, text=RESET_BUTTON_TEXT, font=(FONT, FONT_SIZE, FONT_WEIGHT), activebackground=State.FAILURE.value.color, highlightthickness=0, borderwidth=0, command=self.reset), anchor='s')
     bottom_rectangle = self.canvas.create_rectangle(lower_text_bounding_box[0]-WINDOW_PADDING_PX, lower_text_bounding_box[1]-WINDOW_PADDING_PX, WINDOW_WIDTH_PX, lower_text_bounding_box[3]+WINDOW_PADDING_PX, fill='#3B3B3B')                                 
     self.canvas.tag_lower(bottom_rectangle, self.person_counter_text)
     self.main_text = self.canvas.create_text(WINDOW_WIDTH_PX/2, (WINDOW_HEIGHT_PX-(lower_text_bounding_box[3]-lower_text_bounding_box[1]+2*WINDOW_PADDING_PX))/2, text=self.state.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='center')

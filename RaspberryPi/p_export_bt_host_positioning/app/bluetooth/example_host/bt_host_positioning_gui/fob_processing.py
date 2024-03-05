@@ -138,6 +138,8 @@ class FobProcessing:
     with self.lock:
       if address in self.fobs_currently_connected:
        self.fobs_currently_connected.remove(address)
+      if address in self.fobs_currently_connecting:
+        self.fobs_currently_connecting.remove(address)
 
 def signal_handler(sig, frame):
   fob_processing.gui.running = False
