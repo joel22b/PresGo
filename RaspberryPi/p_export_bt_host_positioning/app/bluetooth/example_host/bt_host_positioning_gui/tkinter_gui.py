@@ -1,5 +1,5 @@
 from collections import deque, namedtuple
-import datetime
+from datetime import datetime
 from enum import Enum
 import threading
 from threading import Lock
@@ -17,7 +17,7 @@ PERSON_COUNTER_TEXT_TEMPLATE = 'Bus Occupancy: '
 STATUS_TEXT_TEMPLATE = 'System Status: '
 RESET_BUTTON_TEXT = 'RESET'
 VALIDATION_UI_TIMEOUT_S = 7
-TIME_IN_SUCCESS_OR_FAILURE_STATE_S = 2.5
+TIME_IN_SUCCESS_OR_FAILURE_STATE_S = 2.25
 
 ColorWithDefaultMessage = namedtuple('ColorWithDefaultMessage', ['color', 'default_message'])
 StateWithMessage = namedtuple('StateWithMessage', ['state', 'message'])
@@ -50,9 +50,9 @@ class TkinterGUI:
     self.canvas.pack(fill='both', expand=True)
     self.person_counter_text = self.canvas.create_text(WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.get_person_counter_string(), font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='sw')
     self.status_text = self.canvas.create_text(WINDOW_WIDTH_PX-WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.system_status.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill=self.system_status.value.color, anchor='se')
-    self.canvas.create_window(WINDOW_WIDTH_PX/2, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, window=tkinter.Button(self.root, text=RESET_BUTTON_TEXT, command=self.reset))
     self.status_template_text = self.canvas.create_text(self.canvas.bbox(self.status_text)[0], WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=STATUS_TEXT_TEMPLATE, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='se')
     lower_text_bounding_box = self.canvas.bbox(self.person_counter_text)
+    self.canvas.create_window(WINDOW_WIDTH_PX/2, WINDOW_HEIGHT_PX-4, window=tkinter.Button(self.root, text=RESET_BUTTON_TEXT, font=(FONT, FONT_SIZE, FONT_WEIGHT), activebackground=State.FAILURE.value.color, highlightthickness=0, borderwidth=0, command=self.reset), anchor='s')
     bottom_rectangle = self.canvas.create_rectangle(lower_text_bounding_box[0]-WINDOW_PADDING_PX, lower_text_bounding_box[1]-WINDOW_PADDING_PX, WINDOW_WIDTH_PX, lower_text_bounding_box[3]+WINDOW_PADDING_PX, fill='#3B3B3B')                                 
     self.canvas.tag_lower(bottom_rectangle, self.person_counter_text)
     self.main_text = self.canvas.create_text(WINDOW_WIDTH_PX/2, (WINDOW_HEIGHT_PX-(lower_text_bounding_box[3]-lower_text_bounding_box[1]+2*WINDOW_PADDING_PX))/2, text=self.state.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='center')
@@ -121,7 +121,7 @@ class TkinterGUI:
                 self.state_queue.remove(state_with_message)
                 break
             if not found_validation_result:
-              if (datetime.datetime.now() - self.validation_start_time).total_seconds() < VALIDATION_UI_TIMEOUT_S:
+              if (datetime.now() - self.validation_start_time).total_seconds() < VALIDATION_UI_TIMEOUT_S: # not 100% sure this timeout working
                 continue
               # time in validation exceeds timeout, assume no message 
               self.validation_start_time = None
@@ -138,7 +138,7 @@ class TkinterGUI:
             self.state_queue.append(StateWithMessage(state=State.WAITING, message=State.WAITING.value.default_message))
             time.sleep(TIME_IN_SUCCESS_OR_FAILURE_STATE_S)
           elif state == State.VALIDATING:
-            self.validation_start_time = datetime.datetime.now()
+            self.validation_start_time = datetime.now()
     except Exception as e:
       print('Error in tkinter_gui state queue loop:', str(e))
       self.set_system_status(SystemStatus.ERROR)

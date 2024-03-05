@@ -14,12 +14,13 @@ from tkinter_gui import SystemStatus
 from uuid import UUID
 import fare_system
 
-
 BUS_NODE_WITH_CONNECTION_PORT = '/dev/ttyACM1' # outermost (triggered first upon entry)
 # BUS_NODE_DISTANCE_SENSOR_ONLY_PORT = '/dev/ttyACM2' # innermost distance sensor (triggered first upon exit)
 PAY_ZONE_X_MAX = 2
 PAY_ZONE_Y_MAX = 2
 PAY_ZONE_Z_MAX = 50 # don't care about this dimension if it's facing upwards
+VALIDATION_ATTEMPT_LOCKOUT_S = 5 # only attempt a validation again after x seconds for a particular fare fob
+TIME_BETWEEN_NO_FOB_RESULTS_S = 0.4
 
 fob_processing = None
 
@@ -39,11 +40,13 @@ class FobProcessing:
   def reset(self, init = False):
     self.fobs_last_in_pay_zone = {}
     self.fobs_validating = []
+    self.fobs_most_recent_validation_attempt = {}
     self.fobs_currently_connecting = []
     self.fobs_currently_connected = []
     self.someone_in_doorway1 = False
     # self.someone_in_doorway2 = False
     self.processed_count = 0
+    self.time_of_last_no_fob = None
     if not init:
       self.pt_serial.send_announcement_kill() 
 
@@ -52,6 +55,7 @@ class FobProcessing:
     return x < PAY_ZONE_X_MAX and y < PAY_ZONE_Y_MAX and z < PAY_ZONE_Z_MAX
 
   def get_fare_id(self, address: str, uuid: UUID):
+    self.fobs_most_recent_validation_attempt[address] = datetime.now()
     print("Fare ID: " + str(uuid) + " Address: " + address)
     self.pt_serial.send_announcement_kill()
     (valid, balance) = self.fare_sys.validate_fare(uuid)
@@ -80,7 +84,7 @@ class FobProcessing:
       most_recent_in_pay_zone_id = None
       most_recent_in_pay_zone_time = None
       for id, (is_fob_in_pay_zone, time_last_seen) in self.fobs_last_in_pay_zone.items():
-        if is_fob_in_pay_zone and (most_recent_in_pay_zone_time is None or time_last_seen > most_recent_in_pay_zone_time) and not id in self.fobs_validating:
+        if is_fob_in_pay_zone and (most_recent_in_pay_zone_time is None or time_last_seen > most_recent_in_pay_zone_time) and not id in self.fobs_validating and (not id in self.fobs_most_recent_validation_attempt or (datetime.now() - self.fobs_most_recent_validation_attempt[id]).total_seconds() > VALIDATION_ATTEMPT_LOCKOUT_S):
           most_recent_in_pay_zone_id = id
           most_recent_in_pay_zone_time = time_last_seen
       if most_recent_in_pay_zone_id is None:
@@ -97,8 +101,10 @@ class FobProcessing:
       if inDoorway:
         return
       if self.processed_count == 0:
-        self.gui.enqueue_state(tkinter_gui.State.FAILURE, 'Valid payment fob not found.')
-        self.gui.increment_person_counter() # Temporary, even with only 1 distance sensor there may be a better counting method
+        if not self.time_of_last_no_fob or (datetime.now() - self.time_of_last_no_fob).total_seconds() > TIME_BETWEEN_NO_FOB_RESULTS_S:
+          self.gui.enqueue_state(tkinter_gui.State.FAILURE, 'Valid payment fob not found.')
+          self.gui.increment_person_counter() # Change this if we don't like it always triggering
+        self.time_of_last_no_fob = datetime.now()
       else:
         self.processed_count = 0
       # if self.someone_in_doorway2:

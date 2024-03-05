@@ -34,9 +34,9 @@ class MQTTClient:
       client.connect(host=args.m["host"], port=args.m["port"])
       client.loop_forever() # TODO replace with loop_start if can get it to work
     except Exception as e:
-        print('Error in setup_mqtt:', str(e))
-        if self.gui:
-          self.gui.set_system_status(SystemStatus.ERROR)
+      print('Error in setup_mqtt:', str(e))
+      if self.gui:
+        self.gui.set_system_status(SystemStatus.ERROR)
 
   def mqtt_conn_type(self, arg):
     """ Argument parser for MQTT server connection parameters. """
