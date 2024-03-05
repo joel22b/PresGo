@@ -7,6 +7,7 @@ from uuid import UUID
 
 class ProtocolSerial:
     running = True
+    debug = False
     serialPort = None
     reqId = 1
     callbacks = []
@@ -33,11 +34,13 @@ class ProtocolSerial:
             read_data = self.serialPort.readline()
             if read_data: 
                 cmd = read_data.decode().rstrip().replace("\r", "")
-                print(f"Received: {cmd}")
+                if self.debug:
+                    print(f"Received: {cmd}")
                 self.decode_message(cmd)
 
     def serial_write(self, msg: psm.Message):
-        #print("["+str(msg)+"]")
+        if self.debug:
+            print("["+str(msg)+"]")
         self.serialPort.write(msg.__str__().encode())
     
     def decode_message(self, raw: str):
@@ -106,6 +109,11 @@ class ProtocolSerial:
         self.callbacks.insert(reqId, callback)
         msg = psm.RequestDoor()
         msg.create(reqId)
+        self.serial_write(msg)
+
+    def send_announcement_kill(self):
+        msg = psm.AnnouncementKill()
+        msg.create()
         self.serial_write(msg)
 
 def init_printout(flags: int):

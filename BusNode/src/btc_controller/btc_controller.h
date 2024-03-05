@@ -34,7 +34,8 @@ void btc_connect_tx_request(btc_connection_t* conn, pt_req_t reqType);
 void btc_connect_tx_data(btc_connection_t* conn, uint8_t* data, uint16_t len);
 void btc_connect_rx_data(btc_connection_t* conn, uint8_t* data, uint16_t len);
 void btc_connect_cleanup(btc_connection_t* conn);
-void btc_connect_timeout(void* data);
+void btc_connect_timeout_connect(void* data);
+void btc_connect_timeout_fare(void* data);
 
 void btc_adv_init();
 void btc_adv_start();

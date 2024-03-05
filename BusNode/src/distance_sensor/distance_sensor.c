@@ -89,7 +89,7 @@ void ds_init() {
 	/* Those basic I2C read functions can be used to check your own I2C functions */
 	status = VL53L1_RdWord(&hi2cx, DS_ADDRESS, 0x010F, &wordData);
 	if (status != 0) {
-		printf("Failed to discover distance sensor on i2c bus: %d\n\r", status);
+		//printf("Failed to discover distance sensor on i2c bus: %d\n\r", status);
 		return;
 	}
 	// Validate the Model ID and Module Type

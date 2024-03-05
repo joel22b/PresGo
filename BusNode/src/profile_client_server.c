@@ -751,14 +751,14 @@ void SendDataCB(void *param)
 
 /* ***************** BlueNRG-LP Stack Callbacks ********************************/
 
-void aci_gap_proc_complete_event(uint8_t Procedure_Code,
+/*void aci_gap_proc_complete_event(uint8_t Procedure_Code,
                                  uint8_t Status,
                                  uint8_t Data_Length,
                                  uint8_t Data[])
 {
   APP_FLAG_CLEAR(SCANNING);
   //printf("aci_gap_proc_complete_event\n\r");
-}
+}*/
 
 /*void hci_le_connection_complete_event(uint8_t Status,
                                       uint16_t Connection_Handle,
@@ -1088,7 +1088,7 @@ void aci_gap_pairing_complete_event(uint16_t Connection_Handle,
 }*/
 #if MAX_NUM_MASTERS
 
-void aci_gatt_srv_write_event(uint16_t Connection_Handle,
+/*void aci_gatt_srv_write_event(uint16_t Connection_Handle,
                                  uint8_t Resp_Needed,
                                  uint16_t Attribute_Handle,
                                  uint16_t Data_Length,
@@ -1118,7 +1118,7 @@ void aci_gatt_srv_write_event(uint16_t Connection_Handle,
     {
         aci_gatt_srv_resp(Connection_Handle, Attribute_Handle, att_error, 0,  NULL);
     }
-}
+}*/
 
 #endif
                                                                                               
@@ -1323,11 +1323,11 @@ void hci_le_data_length_change_event(uint16_t Connection_Handle,
                                      uint16_t MaxRxOctets,
                                      uint16_t MaxRxTime)
 {
-  //PRINTF("hci_le_data_length_change_event handle: 0x%04X, MaxTxOctets: %d, MaxTxTime: %d, MaxRxOctets: %d, MaxRxTime: %d.\r\n", Connection_Handle, MaxTxOctets, MaxTxTime, MaxRxOctets, MaxRxTime);
+  //printf("hci_le_data_length_change_event handle: 0x%04X, MaxTxOctets: %d, MaxTxTime: %d, MaxRxOctets: %d, MaxRxTime: %d.\r\n", Connection_Handle, MaxTxOctets, MaxTxTime, MaxRxOctets, MaxRxTime);
 }
 
 void aci_att_exchange_mtu_resp_event(uint16_t Connection_Handle,
                                      uint16_t RX_MTU)
 {
-  //PRINTF("aci_att_exchange_mtu_resp_event, handle: 0x%04X, RX_MTU: %d \r\n", Connection_Handle, RX_MTU);
+  //printf("aci_att_exchange_mtu_resp_event, handle: 0x%04X, RX_MTU: %d \r\n", Connection_Handle, RX_MTU);
 }

@@ -28,8 +28,10 @@ void btc_tx_cb(void* data) {
 void btc_connect_init() {
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		btc_connect_cleanup(&btc_connections[i]);
-		btc_connections[i].timer.callback = btc_connect_timeout;
-		btc_connections[i].timer.userData = (void*)&(btc_connections[i]);
+		btc_connections[i].timer_connect.callback = btc_connect_timeout_connect;
+		btc_connections[i].timer_connect.userData = (void*)&(btc_connections[i]);
+		btc_connections[i].timer_fare.callback = btc_connect_timeout_fare;
+		btc_connections[i].timer_fare.userData = (void*)&(btc_connections[i]);
 		//printf("Pointer address: 0x%08X\n\r", &btc_connections[i]);
 	}
 	timer_fuck.callback = btc_tx_cb;
@@ -84,6 +86,7 @@ void btc_connect_tick() {
 	uint8_t index;
 	btc_event_t* event = btc_event_next(&index);
 	while (event != NULL) {
+		//printf("EVENT 0x%02X\n\r", event->id);
 		// Process event
 		btc_connection_t* conn = NULL;
 		switch (event->id) {
@@ -94,6 +97,9 @@ void btc_connect_tick() {
 				conn = btc_connect_get_connection(event->disconnect.connection);
 				if (conn == NULL) {
 					continue;
+				}
+				if (event->disconnect.reason != BLE_ERROR_TERMINATED_LOCAL_HOST) {
+					printf("Disconnect reason: 0x%02X\n\r", event->disconnect.reason);
 				}
 				ps_send_ann_disconnect(conn->address);
 				btc_connect_cleanup(conn);
@@ -113,10 +119,11 @@ void btc_connect_tick() {
 			case btc_event_rx_data:
 				conn = btc_connect_get_connection(event->rx_data.connection);
 				if (conn == NULL) {
+					printf("No connection handle: 0x%04X\n\r", event->rx_data.connection);
 					return;
 				}
 
-				if(event->rx_data.attribute == conn->tx + 1) {
+				if(event->rx_data.attribute == conn->rx + 1) {
 					btc_connect_rx_data(conn, event->rx_data.data, event->rx_data.dataLength);
 				}
 				break;
@@ -174,6 +181,7 @@ void btc_connect_request(uint8_t reqId, uint8_t* addr) {
 			btc_connections[i].reqId_fare = 0;
 			btc_connections[i].ps_rsp_connect = 0;
 			btc_connections[i].ps_rsp_fare = 0;
+			HAL_VTIMER_StartTimerMs(&btc_connections[i].timer_connect, RSP_TIMEOUT_CONNECT);
 			//printf("Address: ");
 			for (uint8_t j = 0; j < BTC_ADDRESS_LEN; j++) {
 				//printf("0x%02X ", addr[j]);
@@ -191,7 +199,7 @@ void btc_connect_fare_request(uint8_t reqId, uint8_t* addr) {
 		if (btc_address_match(btc_connections[i].address, addr)) {
 			btc_connections[i].reqId_fare = reqId;
 			btc_connections[i].ps_rsp_fare = 0;
-			HAL_VTIMER_StartTimerMs(&btc_connections[i].timer, RSP_TIMEOUT);
+			HAL_VTIMER_StartTimerMs(&btc_connections[i].timer_fare, RSP_TIMEOUT_FARE);
 			if (btc_connections[i].state == btc_connect_state_connected) {
 				btc_connect_tx_request(&btc_connections[i], pt_req_fare_id);
 			}
@@ -207,6 +215,7 @@ void btc_connect_fare_request(uint8_t reqId, uint8_t* addr) {
 		if (btc_address_match(btc_connections[i].address, addr)) {
 			btc_connections[i].reqId_fare = reqId;
 			btc_connections[i].ps_rsp_fare = 0;
+			HAL_VTIMER_StartTimerMs(&btc_connections[i].timer_fare, RSP_TIMEOUT_FARE);
 		}
 	}
 }
@@ -277,9 +286,9 @@ void btc_connect_proc_complete(btc_connection_t* conn, uint8_t error) {
 				// TODO: Add state output
 				conn->ps_rsp_connect = 1;
 				ps_send_rsp_connect(conn->reqId_connect, 0);
-			}
-			if (conn->reqId_fare != 0) {
-				btc_connect_tx_request(conn, pt_req_fare_id);
+				if (conn->reqId_fare != 0) {
+					btc_connect_tx_request(conn, pt_req_fare_id);
+				}
 			}
 			break;
 		case btc_connect_state_connected:
@@ -314,7 +323,8 @@ void btc_connect_discover_characteristics(btc_connection_t* conn) {
 
 	conn->tx = 0;
 	conn->rx = 0;
-	tBleStatus ret = aci_gatt_clt_disc_all_char_of_service(conn->connection, conn->service_start, conn->service_end);
+	tBleStatus ret = aci_gatt_clt_disc_all_char_of_service(conn->connection,
+			conn->service_start, conn->service_end);
 	if(ret == 0){
 		conn->state = btc_connect_state_discover_characteristic;
 	}
@@ -327,7 +337,7 @@ void btc_connect_enable_notifications(btc_connection_t* conn) {
 	}
 
 	uint8_t client_char_conf_data[] = {0x01, 0x00}; // Enable notifications
-	tBleStatus ret = aci_gatt_clt_write(conn->connection, conn->tx+2, 2, client_char_conf_data);
+	tBleStatus ret = aci_gatt_clt_write(conn->connection, conn->rx+2, 2, client_char_conf_data);
 	if (ret == 0) {
 		conn->state = btc_connect_state_enable_notifications;
 	}
@@ -349,8 +359,8 @@ void btc_connect_tx_request(btc_connection_t* conn, pt_req_t reqType) {
 void btc_connect_tx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
 	//printf("TX Data: conn=[0x%08X] connection=[0x%04X] rx=[0x%04X]\n\r", conn, conn->connection, conn->rx);
 	if (conn->state == btc_connect_state_connected) {
-		//tBleStatus ret = aci_gatt_clt_write_without_resp(conn->connection,conn->rx+1, len, data);
-		tBleStatus ret = aci_gatt_clt_write(conn->connection,conn->rx+1, len, data);
+		tBleStatus ret = aci_gatt_clt_write_without_resp(conn->connection,conn->rx+1, len, data);
+		//tBleStatus ret = aci_gatt_clt_write(conn->connection,conn->rx+1, len, data);
 		if(ret != BLE_STATUS_SUCCESS) {
 			printf("Failed to send data: 0x%02X [0x%02X", ret, data[0]);
 			for (uint16_t i = 1; i < len; i++) {
@@ -412,9 +422,23 @@ void btc_connect_cleanup(btc_connection_t* conn) {
 	conn->ps_rsp_fare = 0;
 }
 
-void btc_connect_timeout(void* data) {
-	//printf("Timeout: 0x%08X\n\r", data);
+void btc_connect_timeout_connect(void* data) {
+	printf("Timeout connect: 0x%08X\n\r", data);
 	btc_connection_t* conn = (btc_connection_t*)(data-0x10);
+	printf("handle=0x%04X\n\r", conn->connection);
+	if (conn->state != btc_connect_state_connected) {
+		if (conn->reqId_connect != 0 && !conn->ps_rsp_connect) {
+			conn->ps_rsp_connect = 1;
+			ps_send_rsp_connect(conn->reqId_connect, 2);
+			btc_connect_disconnect(conn);
+		}
+	}
+}
+
+void btc_connect_timeout_fare(void* data) {
+	printf("Timeout fare: 0x%08X\n\r", data);
+	btc_connection_t* conn = (btc_connection_t*)(data-0x28);
+	printf("handle=0x%04X\n\r", conn->connection);
 	if (conn->state != btc_connect_state_empty) {
 		//printf("Timeout connection 0x%04X: state=0x%02X\n\r", conn->connection, conn->state);
 		if (!conn->ps_rsp_connect && conn->reqId_connect != 0) {
@@ -498,6 +522,36 @@ void aci_gatt_clt_error_resp_event(uint16_t Connection_Handle,
                                uint16_t Attribute_Handle,
                                uint8_t Error_Code)
 {
-  printf("aci_gatt_clt_error_resp_event handle=0x%04X req_opcode=0x%02X att_handle=0x%04X error=0x%02X\n\r",
-		  Connection_Handle, Req_Opcode, Attribute_Handle, Error_Code);
+  //printf("aci_gatt_clt_error_resp_event handle=0x%04X req_opcode=0x%02X att_handle=0x%04X error=0x%02X\n\r",
+//		  Connection_Handle, Req_Opcode, Attribute_Handle, Error_Code);
 }
+
+void aci_gatt_clt_disc_read_char_by_uuid_resp_event(uint16_t Connection_Handle,
+                                                    uint16_t Attribute_Handle,
+                                                    uint8_t Attribute_Value_Length,
+                                                    uint8_t Attribute_Value[]) {
+	printf("aci_gatt_clt_disc_read_char_by_uuid_resp_event handle=0x%04X att=0x%04X\n\r",
+			Connection_Handle, Attribute_Handle);
+}
+
+void aci_gap_proc_complete_event(uint8_t Procedure_Code,
+                                 uint8_t Status,
+                                 uint8_t Data_Length,
+                                 uint8_t Data[])
+{
+  //APP_FLAG_CLEAR(SCANNING);
+  //printf("aci_gap_proc_complete_event\n\r");
+}
+
+void aci_gatt_srv_write_event(uint16_t Connection_Handle,
+                                 uint8_t Resp_Needed,
+                                 uint16_t Attribute_Handle,
+                                 uint16_t Data_Length,
+                                 uint8_t Data[])
+{
+	printf("aci_gatt_srv_write_event\n\r");
+}
+
+/*void hci_command_status_event() {
+
+}*/

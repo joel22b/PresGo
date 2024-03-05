@@ -74,7 +74,7 @@ void ps_init() {
 		ps_msg_len[i] = 0;
 	}
 	ps_is_init = 1;
-	printf("Protocol Serial Initialized\n\r");
+	//printf("Protocol Serial Initialized\n\r");
 }
 
 void ps_process() {
@@ -154,6 +154,20 @@ void ps_process_msg(uint8_t index) {
 		else if (ps_cmp(&ps_msg[index][parse_index], PS_TYPE_DIST, PS_TYPE_LEN)) {
 			// Request for Distance
 			ps_send_rsp_dist(reqId, 10);
+		}
+	}
+	else if (ps_cmp(&ps_msg[index][parse_index], PS_IDENTIFIER_ANNOUNCEMENT, PS_IDENTIFIER_LEN)) {
+		parse_index += PS_IDENTIFIER_LEN;
+		if (ps_msg[index][parse_index] != PS_SEPARATOR_CHAR) {
+			// Missing separator, ignore
+			return;
+		}
+		parse_index++;
+
+		if (ps_cmp(&ps_msg[index][parse_index], PS_TYPE_KILL, PS_TYPE_LEN)) {
+			parse_index += PS_TYPE_LEN + 1;
+			// Announcement to Kill
+			NVIC_SystemReset();
 		}
 	}
 }

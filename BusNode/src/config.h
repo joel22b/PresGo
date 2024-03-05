@@ -10,7 +10,8 @@
 
 #include "ble_const.h"
 
-#define RSP_TIMEOUT 2000
+#define RSP_TIMEOUT_CONNECT 5000
+#define RSP_TIMEOUT_FARE 2000
 
 /* ====================================
  * BusNode Address

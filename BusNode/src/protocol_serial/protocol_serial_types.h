@@ -29,6 +29,7 @@
 #define PS_TYPE_DIST		"Dist"
 #define PS_TYPE_DOOR		"Door"
 #define PS_TYPE_INIT		"Init"
+#define PS_TYPE_KILL		"Kill"
 
 // INIT FLAGS
 #define PS_INIT_EMPTY					0x00

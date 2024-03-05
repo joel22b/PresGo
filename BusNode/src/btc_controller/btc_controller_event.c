@@ -40,6 +40,7 @@ void btc_event_add(btc_event_t* event) {
 		if (btc_events_indexes[i] == BTC_EVENT_EMPTY) {
 			memcpy(&btc_events[i], event, sizeof(btc_event_t));
 			btc_events_indexes[i] = BTC_EVENT_READY;
+			//printf("Added: 0x%02X\n\r", event->id);
 			return;
 		}
 	}

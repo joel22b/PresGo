@@ -41,7 +41,8 @@ struct btc_connection {
 	uint16_t service_end;
 	uint16_t tx;
 	uint16_t rx;
-	VTIMER_HandleType timer;
+	VTIMER_HandleType timer_connect;
+	VTIMER_HandleType timer_fare;
 	uint8_t ps_rsp_connect;
 	uint8_t ps_rsp_fare;
 	uint8_t address[BTC_ADDRESS_LEN];

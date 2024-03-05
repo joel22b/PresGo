@@ -7,19 +7,19 @@ C_SRCS += \
 ../src/btc_controller/btc_controller.c \
 ../src/btc_controller/btc_controller_adv.c \
 ../src/btc_controller/btc_controller_connect.c \
-../src/btc_controller/btc_event.c 
+../src/btc_controller/btc_controller_event.c 
 
 OBJS += \
 ./src/btc_controller/btc_controller.o \
 ./src/btc_controller/btc_controller_adv.o \
 ./src/btc_controller/btc_controller_connect.o \
-./src/btc_controller/btc_event.o 
+./src/btc_controller/btc_controller_event.o 
 
 C_DEPS += \
 ./src/btc_controller/btc_controller.d \
 ./src/btc_controller/btc_controller_adv.d \
 ./src/btc_controller/btc_controller_connect.d \
-./src/btc_controller/btc_event.d 
+./src/btc_controller/btc_controller_event.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

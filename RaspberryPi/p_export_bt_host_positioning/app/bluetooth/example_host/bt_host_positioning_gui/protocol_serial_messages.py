@@ -15,6 +15,7 @@ class MsgType(Enum):
     Init = 4
     Conn = 5
     Disc = 6
+    Kill = 7
 
 class InitFlags(Enum):
     Distance_Sensor = 1
@@ -104,3 +105,8 @@ class ResponseDoor(Response):
 
 class AnnouncementDoor(Announcement):
     inDoorway: bool = False
+
+class AnnouncementKill(Announcement):
+    def create(self):
+        super().create(MsgType.Kill)
+        self.finish()
