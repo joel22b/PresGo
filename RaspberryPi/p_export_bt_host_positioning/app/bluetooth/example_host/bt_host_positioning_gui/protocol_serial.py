@@ -14,6 +14,7 @@ class ProtocolSerial:
     callbackAnnouncementDoor = None
     callbackAnnouncementInit = None
     callbackAnnouncementDisconnect = None
+    gui = None
 
     def __init__(self, port: str, callbackAnnouncementDoor, callbackAnnouncementInit, callbackAnnouncementDisconnect, gui):
         self.callbackAnnouncementDoor = callbackAnnouncementDoor
@@ -40,7 +41,8 @@ class ProtocolSerial:
                         print(f"Received: {cmd}")
                     self.decode_message(cmd)
         except Exception as e:
-            self.gui.set_system_error_status()
+            if self.gui != None:
+                self.gui.set_system_error_status()
 
     def serial_write(self, msg: psm.Message):
         if self.debug:
@@ -131,4 +133,5 @@ class ProtocolSerial:
         for flag in psm.InitFlags:
             if not (flag.value&flags):
                 print("Error in ", flag.name)
-                self.gui.set_system_error_status()
+                if self.gui != None:
+                    self.gui.set_system_error_status()

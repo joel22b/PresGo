@@ -45,7 +45,7 @@ def get_fare_id(uuid: UUID):
   #ptSerial.send_request_fare("0C4314F4627F", get_fare_id)
 
 global ptSerial
-ptSerial = ps.ProtocolSerial("COM9", door_announcement, init_announcement, disconnect_announcement)
+ptSerial = ps.ProtocolSerial("COM9", door_announcement, init_announcement, disconnect_announcement, None)
 #ptSerial.debug = True
 
 global fareSystem
