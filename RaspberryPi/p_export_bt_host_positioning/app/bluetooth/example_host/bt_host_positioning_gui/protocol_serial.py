@@ -21,6 +21,10 @@ class ProtocolSerial:
         self.callbackAnnouncementInit = callbackAnnouncementInit
         self.callbackAnnouncementDisconnect = callbackAnnouncementDisconnect
         self.gui = gui
+
+        filename = "output_"+port+".log"
+        print("Opening log file: " + filename)
+        self.outFile = open(filename, 'w')
         # setup serial port for communicating with bluenrg board
         # /dev/ttyACM0 if plugged in before or without antenna array, else /dev/ttyACM1
         self.serialPort = serial.Serial(port=port, baudrate=115200, timeout=10)
@@ -39,6 +43,8 @@ class ProtocolSerial:
                     cmd = read_data.decode().rstrip().replace("\r", "")
                     if self.debug:
                         print(f"Received: {cmd}")
+                    self.outFile.write(f"Received: {cmd}\n")
+                    self.outFile.flush()
                     self.decode_message(cmd)
         except Exception as e:
             if self.gui != None:
@@ -47,6 +53,7 @@ class ProtocolSerial:
     def serial_write(self, msg: psm.Message):
         if self.debug:
             print("["+str(msg)+"]")
+        self.outFile.write("["+str(msg)+"]\n")
         self.serialPort.write(msg.__str__().encode())
     
     def decode_message(self, raw: str):
@@ -78,7 +85,9 @@ class ProtocolSerial:
                     inDoorway = True
                 self.callbackAnnouncementDoor(inDoorway)
             elif psm.MsgType.Init.name == msgTypeStr:
-                self.callbackAnnouncementInit(int(raw[10:12], 16))
+                flags = int(raw[10:12], 16)
+                self.outFile.write(init_str(flags))
+                self.callbackAnnouncementInit(flags)
             elif psm.MsgType.Disc.name == msgTypeStr:
                 self.callbackAnnouncementDisconnect(raw[10:22])
     
@@ -122,12 +131,6 @@ class ProtocolSerial:
         msg.create()
         self.serial_write(msg)
 
-    def init_printout(flags: int):
-        print("Initialization complete:")
-        for flag in psm.InitFlags:
-            print("\t" + flag.name.replace("_", " ") + ": " + str(bool(flag.value & flags)))
-
-
     def check_and_set_error_status(self, flags:int):
         print("Checking Errors in Protocol Serial:")
         for flag in psm.InitFlags:
@@ -135,3 +138,15 @@ class ProtocolSerial:
                 print("Error in ", flag.name)
                 if self.gui != None:
                     self.gui.set_system_error_status()
+    
+def init_str(flags: int) -> str:
+    s = "Initialization complete:\n"
+    for flag in psm.InitFlags:
+        s += "\t" + flag.name.replace("_", " ") + ": " + str(bool(flag.value & flags)) + "\n"
+    return s
+
+def init_printout(flags: int):
+    print(init_str(flags))
+    #print("Initialization complete:")
+    #for flag in psm.InitFlags:
+    #    print("\t" + flag.name.replace("_", " ") + ": " + str(bool(flag.value & flags)))
