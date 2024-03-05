@@ -10,7 +10,9 @@ import signal
 from threading import Lock
 import time
 import tkinter_gui
+from tkinter_gui import SystemStatus
 from uuid import UUID
+
 
 BUS_NODE_WITH_CONNECTION_PORT = '/dev/ttyACM1' #outermost (triggered first upon entry)
 # BUS_NODE_DISTANCE_SENSOR_ONLY_PORT = '/dev/ttyACM2' #innermost distance sensor (triggered first upon exit)
@@ -21,17 +23,16 @@ fob_processing = None
 class FobProcessing:
   def __init__(self):
     self.lock = Lock()
-
-    self.reset()
+    self.reset(True)
     # setup gui and initialize global variables used by mqtt callbacks
     self.gui = tkinter_gui.TkinterGUI(self)
     # setup mqtt client and serial communication with stm board 
     self.mqtt = mqtt_client.MQTTClient(self,gui)
-    self.pt_serial = protocol_serial.ProtocolSerial(BUS_NODE_WITH_CONNECTION_PORT, self.door_announcement_1, self.stm_init_announcement, self.disconnect_announcement,gui)
+    self.pt_serial = protocol_serial.ProtocolSerial(BUS_NODE_WITH_CONNECTION_PORT, self.door_announcement_1, self.stm_init_announcement, self.disconnect_announcement, gui)
+    self.pt_serial.send_announcement_kill() 
     # self.pt_serial_distance = protocol_serial.ProtocolSerial(BUS_NODE_DISTANCE_SENSOR_ONLY_PORT, self.door_announcement_2, self.stm_init_announcement) 
 
-
-  def reset(self):
+  def reset(self, init = False):
     self.fobs_in_cylinder_status = {}
     self.fobs_attempting_payment = []
     self.fobs_currently_connecting = []
@@ -39,6 +40,8 @@ class FobProcessing:
     self.someone_in_doorway1 = False
     # self.someone_in_doorway2 = False
     self.processed_count = 0
+    if not init:
+      self.pt_serial.send_announcement_kill() 
 
   def is_point_inside_cylinder(self, x, y, z, radius, height):
     in_circle = x ** 2 + y ** 2 <= radius ** 2
@@ -47,6 +50,7 @@ class FobProcessing:
 
   def get_fare_id(self, address: str, uuid: UUID):
     print("Fare ID: " + str(uuid) + " Address: " + address)
+    self.pt_serial.send_announcement_kill()
     with self.lock:
       if address in self.fobs_attempting_payment:
         self.fobs_attempting_payment.remove(address)
@@ -127,13 +131,18 @@ def signal_handler(sig, frame):
   running = False
 
 def main():
-  # setup signal handler for graceful shutdown
-  signal.signal(signal.SIGINT, signal_handler)
-  # setup gui, fob_processing, mqtt client, and serial communication with BlueNRG board
-  global fob_processing
-  fob_processing = FobProcessing()
-  # start GUI loop on separate thread
-  fob_processing.gui.start_main_loop()
+  try:
+    # setup signal handler for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    # setup gui, fob_processing, mqtt client, and serial communication with BlueNRG board
+    global fob_processing
+    fob_processing = FobProcessing()
+    # start GUI loop on separate thread
+    fob_processing.gui.start_main_loop()
+  except Exception as e:
+    print('Error on main thread:', str(e))
+    if fob_processing.gui:
+      fob_processing.gui.set_system_status(SystemStatus.ERROR)
   # loop on main thread until program termination
   global running
   while running:

@@ -5,6 +5,7 @@ import os
 import paho.mqtt.client as mqtt
 import re
 import threading
+from tkinter_gui import SystemStatus
 import visualizer
 
 DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "../bt_host_positioning/config/positioning_config.json")
@@ -32,9 +33,10 @@ class MQTTClient:
       client.on_message = self.on_message
       client.connect(host=args.m["host"], port=args.m["port"])
       client.loop_forever() # TODO replace with loop_start if can get it to work
-
     except Exception as e:
-        self.gui.set_system_error_status()
+        print('Error in setup_mqtt:', str(e))
+        if self.gui:
+          self.gui.set_system_status(SystemStatus.ERROR)
 
   def mqtt_conn_type(self, arg):
     """ Argument parser for MQTT server connection parameters. """

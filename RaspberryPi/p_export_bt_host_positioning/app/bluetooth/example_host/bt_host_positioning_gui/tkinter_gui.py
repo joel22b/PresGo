@@ -63,6 +63,7 @@ class TkinterGUI:
       self.state = State.WAITING
       self.validation_start_time = None
       self.state_queue = deque()
+      
       if not init:
         self.fob_processing.reset()
         self.canvas.itemconfig(self.person_counter_text, text=self.get_person_counter_string())
@@ -94,10 +95,7 @@ class TkinterGUI:
     with self.lock:
       self.system_status = system_status
       self.canvas.itemconfig(self.gui_status_text, text=system_status.value.default_message)
-  def set_system_error_status(self):
-    with self.lock:
-      self.system_status = SystemStatus.ERROR
-      self.canvas.itemconfig(self.gui_status_text, text=SystemStatus.ERROR.value.default_message)
+
   def enqueue_state(self, state, display_text=None):
     with self.lock:
       display_text = display_text if display_text is not None else state.value.default_message
@@ -107,36 +105,40 @@ class TkinterGUI:
         self.state_queue.append(StateWithMessage(state=State.WAITING, message=State.WAITING.value.default_message))
 
   def process_state_queue(self):
-    while self.running:
-      with self.lock:
-        if not self.state_queue:
-          continue
-        state, display_text = None, None
-        # when in 'VALIDATING' state, ensure the result of the validation is the next state selected
-        if self.state == State.VALIDATING:
-          found_validation_result = False
-          for state_with_message in list(self.state_queue):
-            # only want to transition to a success or failure failure state related to the validation, not a failure state caused by someone walking through with no tag
-            if (state_with_message.state == State.SUCCESS or state_with_message.state == State.FAILURE) and state_with_message.message == state_with_message.state.value.default_message:
-              found_validation_result = True
-              state, display_text = state_with_message
-              self.state_queue.remove(state_with_message)
-              break
-          if not found_validation_result:
-            if time.time() - self.validation_start_time < VALIDATION_UI_TIMEOUT_S:
-              continue
-            # ui-side timeout for validation has been exceeded, assume failure
-            self.validation_start_time = None
-            state = State.FAILURE
-            display_text = state.value.default_message
-        else:
-          state, display_text = self.state_queue.popleft()
-        self.state = state
-        background = state.value.color
-        self.canvas.config(bg=background)
-        self.canvas.itemconfig(self.gui_main_text, text=display_text)
-        if state == State.SUCCESS or state == State.FAILURE:
-          time.sleep(TIME_IN_SUCCESS_OR_FAILURE_STATE_S)
+    try:
+      while self.running:
+        with self.lock:
+          if not self.state_queue:
+            continue
+          state, display_text = None, None
+          # when in 'VALIDATING' state, ensure the result of the validation is the next state selected
+          if self.state == State.VALIDATING:
+            found_validation_result = False
+            for state_with_message in list(self.state_queue):
+              # only want to transition to a success or failure failure state related to the validation, not a failure state caused by someone walking through with no tag
+              if (state_with_message.state == State.SUCCESS or state_with_message.state == State.FAILURE) and state_with_message.message == state_with_message.state.value.default_message:
+                found_validation_result = True
+                state, display_text = state_with_message
+                self.state_queue.remove(state_with_message)
+                break
+            if not found_validation_result:
+              if time.time() - self.validation_start_time < VALIDATION_UI_TIMEOUT_S:
+                continue
+              # ui-side timeout for validation has been exceeded, assume failure
+              self.validation_start_time = None
+              state = State.FAILURE
+              display_text = state.value.default_message
+          else:
+            state, display_text = self.state_queue.popleft()
+          self.state = state
+          background = state.value.color
+          self.canvas.config(bg=background)
+          self.canvas.itemconfig(self.gui_main_text, text=display_text)
+          if state == State.SUCCESS or state == State.FAILURE:
+            time.sleep(TIME_IN_SUCCESS_OR_FAILURE_STATE_S)
+    except Exception as e:
+      print('Error in tkinter_gui state queue loop:', str(e))
+      self.set_system_status(SystemStatus.ERROR)
 
   def start_main_loop(self):
     self.main_thread = threading.Thread(target=self.main_loop(), daemon=True)
@@ -147,5 +149,6 @@ class TkinterGUI:
         self.root.after(100, self.check_if_running)
         self.root.mainloop()
     except Exception as e:
+        print('Error in tkinter_gui main loop:', str(e))
         self.set_system_status(SystemStatus.ERROR)
       

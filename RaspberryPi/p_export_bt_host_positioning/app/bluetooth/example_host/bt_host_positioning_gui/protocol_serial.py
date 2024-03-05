@@ -3,6 +3,7 @@
 import protocol_serial_messages as psm
 import serial
 import threading
+from tkinter_gui import SystemStatus
 from uuid import UUID
 
 class ProtocolSerial:
@@ -41,8 +42,9 @@ class ProtocolSerial:
                         print(f"Received: {cmd}")
                     self.decode_message(cmd)
         except Exception as e:
+            print('Error in protocol_serial serial_read_thread:', str(e))
             if self.gui != None:
-                self.gui.set_system_error_status()
+                self.gui.set_system_status(SystemStatus.ERROR)
 
     def serial_write(self, msg: psm.Message):
         if self.debug:
@@ -127,11 +129,10 @@ class ProtocolSerial:
         for flag in psm.InitFlags:
             print("\t" + flag.name.replace("_", " ") + ": " + str(bool(flag.value & flags)))
 
-
     def check_and_set_error_status(self, flags:int):
         print("Checking Errors in Protocol Serial:")
         for flag in psm.InitFlags:
             if not (flag.value&flags):
                 print("Error in ", flag.name)
                 if self.gui != None:
-                    self.gui.set_system_error_status()
+                    self.gui.set_system_status(SystemStatus.ERROR)
