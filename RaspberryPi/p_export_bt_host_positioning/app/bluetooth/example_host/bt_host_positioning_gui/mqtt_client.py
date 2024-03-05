@@ -12,9 +12,8 @@ DEFAULT_CONNECTION = {"host": "localhost", "port": 1883}
 
 class MQTTClient:
   def __init__(self, fob_processing):
-    # self.running = True # TODO probably restart this on reset signal after you stop the gui
     self.fob_processing = fob_processing
-    # mqtt operations on separate thread to not block main gui thread
+    # mqtt operations on separate thread to not block main thread
     self.thread_mqtt = threading.Thread(target=self.setup_mqtt, daemon=True)
     self.thread_mqtt.start()
 
@@ -29,7 +28,7 @@ class MQTTClient:
     client.on_connect = self.on_connect
     client.on_message = self.on_message
     client.connect(host=args.m["host"], port=args.m["port"])
-    client.loop_forever() # TODO replace with loop_start if can get it to work
+    client.loop_forever()
 
   def mqtt_conn_type(self, arg):
     """ Argument parser for MQTT server connection parameters. """

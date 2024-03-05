@@ -14,6 +14,8 @@ FONT_SIZE = 18
 FONT_WEIGHT = 'bold'
 PERSON_COUNTER_TEXT_TEMPLATE = 'Bus Occupancy: '
 STATUS_TEXT_TEMPLATE = 'System Status: '
+RESET_BUTTON_TEXT = 'RESET'
+VALIDATION_UI_TIMEOUT_S = 7
 TIME_IN_SUCCESS_OR_FAILURE_STATE_S = 1.5
 
 ColorWithDefaultMessage = namedtuple('ColorWithDefaultMessage', ['color', 'default_message'])
@@ -30,9 +32,11 @@ class State(Enum):
   FAILURE = ColorWithDefaultMessage(color='red', default_message='Payment was not successful.')
 
 class TkinterGUI:
-  def __init__(self):
+  def __init__(self, fob_processing):
     # setup graceful shutdown
     self.running = True 
+    # save reference of fob_processing to call its reset on reset button press in the gui
+    self.fob_processing = fob_processing
     # initialize person counter, system status, state and state queue handling thread
     self.lock = Lock()
     self.reset(True)
@@ -43,12 +47,13 @@ class TkinterGUI:
     self.root.title(WINDOW_TITLE)
     self.canvas = tkinter.Canvas(self.root, width=WINDOW_WIDTH_PX, height=WINDOW_HEIGHT_PX, bg=self.state.value.color)
     self.canvas.pack(fill='both', expand=True)
-    self.gui_person_counter_text = self.canvas.create_text(WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.get_person_counter_string(), font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='sw')
-    self.gui_status_text = self.canvas.create_text(WINDOW_WIDTH_PX-WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.system_status.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill=self.system_status.value.color, anchor='se')
-    self.canvas.create_text(self.canvas.bbox(self.gui_status_text)[0], WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=STATUS_TEXT_TEMPLATE, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='se')
-    lower_text_bounding_box = self.canvas.bbox(self.gui_person_counter_text)
+    self.person_counter_text = self.canvas.create_text(WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.get_person_counter_string(), font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='sw')
+    self.status_text = self.canvas.create_text(WINDOW_WIDTH_PX-WINDOW_PADDING_PX, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=self.system_status.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill=self.system_status.value.color, anchor='se')
+    self.canvas.create_window(WINDOW_WIDTH_PX/2, WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, window=tkinter.Button(self.root, text=RESET_BUTTON_TEXT, command=self.reset))
+    self.canvas.create_text(self.canvas.bbox(self.status_text)[0], WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=STATUS_TEXT_TEMPLATE, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='se')
+    lower_text_bounding_box = self.canvas.bbox(self.person_counter_text)
     gui_bottom_rectangle = self.canvas.create_rectangle(lower_text_bounding_box[0]-WINDOW_PADDING_PX, lower_text_bounding_box[1]-WINDOW_PADDING_PX, WINDOW_WIDTH_PX, lower_text_bounding_box[3]+WINDOW_PADDING_PX, fill='#3B3B3B')                                 
-    self.canvas.tag_lower(gui_bottom_rectangle, self.gui_person_counter_text)
+    self.canvas.tag_lower(gui_bottom_rectangle, self.person_counter_text)
     self.gui_main_text = self.canvas.create_text(WINDOW_WIDTH_PX/2, (WINDOW_HEIGHT_PX-(lower_text_bounding_box[3]-lower_text_bounding_box[1]+2*WINDOW_PADDING_PX))/2, text=self.state.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='center')
 
   def reset(self, init = False):
@@ -56,10 +61,12 @@ class TkinterGUI:
       self.num_people_on_bus = 0
       self.system_status = SystemStatus.RUNNING
       self.state = State.WAITING
+      self.validation_start_time = None
       self.state_queue = deque()
       if not init:
-        self.canvas.itemconfig(self.gui_person_counter_text, text=self.get_person_counter_string())
-        self.canvas.itemconfig(self.gui_status_text, text=self.system_status.value.default_message)
+        self.fob_processing.reset()
+        self.canvas.itemconfig(self.person_counter_text, text=self.get_person_counter_string())
+        self.canvas.itemconfig(self.status_text, text=self.system_status.value.default_message)
         self.canvas.itemconfig(self.gui_main_text, text=self.state.value.default_message)
         self.canvas.config(bg=self.state.value.color)
 
@@ -75,13 +82,13 @@ class TkinterGUI:
   def increment_person_counter(self):
     with self.lock:
       self.num_people_on_bus += 1
-      self.canvas.itemconfig(self.gui_person_counter_text, text=self.get_person_counter_string())
+      self.canvas.itemconfig(self.person_counter_text, text=self.get_person_counter_string())
 
   def decrement_person_counter(self):
     with self.lock:
       if self.num_people_on_bus > 0:
         self.num_people_on_bus -= 1
-      self.canvas.itemconfig(self.gui_person_counter_text, text=self.get_person_counter_string())
+      self.canvas.itemconfig(self.person_counter_text, text=self.get_person_counter_string())
 
   def set_system_status(self, system_status):
     with self.lock:
@@ -106,16 +113,21 @@ class TkinterGUI:
         if self.state == State.VALIDATING:
           found_validation_result = False
           for state_with_message in list(self.state_queue):
-            # only want to transition to a success or failure failure state related to the validation, not a failure state caused by someone walking through with no tag tag
+            # only want to transition to a success or failure failure state related to the validation, not a failure state caused by someone walking through with no tag
             if (state_with_message.state == State.SUCCESS or state_with_message.state == State.FAILURE) and state_with_message.message == state_with_message.state.value.default_message:
               found_validation_result = True
               state, display_text = state_with_message
               self.state_queue.remove(state_with_message)
               break
           if not found_validation_result:
-            continue
+            if time.time() - self.validation_start_time < VALIDATION_UI_TIMEOUT_S:
+              continue
+            # ui-side timeout for validation has been exceeded, assume failure
+            self.validation_start_time = None
+            state = State.FAILURE
+            display_text = state.value.default_message
         else:
-          state, display_text  = self.state_queue.popleft()
+          state, display_text = self.state_queue.popleft()
         self.state = state
         background = state.value.color
         self.canvas.config(bg=background)
