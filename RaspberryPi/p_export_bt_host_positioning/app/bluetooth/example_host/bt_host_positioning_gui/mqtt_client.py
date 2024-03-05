@@ -11,13 +11,22 @@ DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "../bt_host_positioning
 DEFAULT_CONNECTION = {"host": "localhost", "port": 1883}
 
 class MQTTClient:
+<<<<<<< HEAD
   def __init__(self, fob_processing):
     self.fob_processing = fob_processing
     # mqtt operations on separate thread to not block main thread
+=======
+  def __init__(self, fob_processing,gui):
+    # self.running = True # TODO probably restart this on reset signal after you stop the gui
+    self.fob_processing = fob_processing
+    self.gui = gui
+    # mqtt operations on separate thread to not block main gui thread
+>>>>>>> d3ba859400eceb9dfd0758efe603042d4a62b597
     self.thread_mqtt = threading.Thread(target=self.setup_mqtt, daemon=True)
     self.thread_mqtt.start()
 
   def setup_mqtt(self):
+<<<<<<< HEAD
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-c", metavar="CONFIG_FILE", help="Configuration file path", default=DEFAULT_CONFIG)
     parser.add_argument("-m", metavar="HOST[:PORT]", help="MQTT broker connection parameters", default=DEFAULT_CONNECTION, type=self.mqtt_conn_type)
@@ -29,6 +38,23 @@ class MQTTClient:
     client.on_message = self.on_message
     client.connect(host=args.m["host"], port=args.m["port"])
     client.loop_forever()
+=======
+    try:
+      parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+      parser.add_argument("-c", metavar="CONFIG_FILE", help="Configuration file path", default=DEFAULT_CONFIG)
+      parser.add_argument("-m", metavar="HOST[:PORT]", help="MQTT broker connection parameters", default=DEFAULT_CONNECTION, type=self.mqtt_conn_type)
+      args = parser.parse_args()
+      v = visualizer.Visualizer()
+      v.parse_config(args.c)
+      client = mqtt.Client(userdata=v)
+      client.on_connect = self.on_connect
+      client.on_message = self.on_message
+      client.connect(host=args.m["host"], port=args.m["port"])
+      client.loop_forever() # TODO replace with loop_start if can get it to work
+
+    except Exception as e:
+        self.gui.set_system_error_status()
+>>>>>>> d3ba859400eceb9dfd0758efe603042d4a62b597
 
   def mqtt_conn_type(self, arg):
     """ Argument parser for MQTT server connection parameters. """

@@ -101,6 +101,16 @@ void btc_connect_tick() {
 				if (event->disconnect.reason != BLE_ERROR_TERMINATED_LOCAL_HOST) {
 					printf("Disconnect reason: 0x%02X\n\r", event->disconnect.reason);
 				}
+				HAL_VTIMER_StopTimer(&conn->timer_connect);
+				HAL_VTIMER_StopTimer(&conn->timer_fare);
+				if (conn->reqId_connect != 0 && !conn->ps_rsp_connect) {
+					conn->ps_rsp_connect = 1;
+					ps_send_rsp_connect(conn->reqId_connect, 1);
+				}
+				if (conn->reqId_fare != 0 && !conn->ps_rsp_fare) {
+					conn->ps_rsp_fare = 1;
+					ps_send_rsp_fare(conn->reqId_fare, BTC_UUID_ERROR);
+				}
 				ps_send_ann_disconnect(conn->address);
 				btc_connect_cleanup(conn);
 				//printf("BYE BYE MOTHERFUCKER\n\r");
@@ -288,6 +298,7 @@ void btc_connect_proc_complete(btc_connection_t* conn, uint8_t error) {
 				ps_send_rsp_connect(conn->reqId_connect, 0);
 				if (conn->reqId_fare != 0) {
 					btc_connect_tx_request(conn, pt_req_fare_id);
+					HAL_VTIMER_StopTimer(&conn->timer_connect);
 				}
 			}
 			break;
@@ -391,6 +402,7 @@ void btc_connect_rx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
 	    	if (!conn->ps_rsp_fare && conn->reqId_fare != 0) {
 	    		conn->ps_rsp_fare = 1;
 	    		ps_send_rsp_fare(conn->reqId_fare, msg->data.fare_id.uuid);
+	    		HAL_VTIMER_StopTimer(&conn->timer_fare);
 	    	}
 	    	//btc_connect_tx_request(conn, pt_req_done);
 	    	//DEATH_TO_AMERICA = 1;

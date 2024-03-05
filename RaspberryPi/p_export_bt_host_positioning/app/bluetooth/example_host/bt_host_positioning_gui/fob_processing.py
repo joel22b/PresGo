@@ -21,13 +21,15 @@ fob_processing = None
 class FobProcessing:
   def __init__(self):
     self.lock = Lock()
+
     self.reset()
     # setup gui and initialize global variables used by mqtt callbacks
     self.gui = tkinter_gui.TkinterGUI(self)
     # setup mqtt client and serial communication with stm board 
-    self.mqtt = mqtt_client.MQTTClient(self)
-    self.pt_serial = protocol_serial.ProtocolSerial(BUS_NODE_WITH_CONNECTION_PORT, self.door_announcement_1, self.stm_init_announcement, self.disconnect_announcement)
+    self.mqtt = mqtt_client.MQTTClient(self,gui)
+    self.pt_serial = protocol_serial.ProtocolSerial(BUS_NODE_WITH_CONNECTION_PORT, self.door_announcement_1, self.stm_init_announcement, self.disconnect_announcement,gui)
     # self.pt_serial_distance = protocol_serial.ProtocolSerial(BUS_NODE_DISTANCE_SENSOR_ONLY_PORT, self.door_announcement_2, self.stm_init_announcement) 
+
 
   def reset(self):
     self.fobs_in_cylinder_status = {}
