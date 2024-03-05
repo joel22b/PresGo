@@ -21,8 +21,8 @@ class FobProcessing:
     self.lock = Lock()
     self.reset_variables()
     self.gui = gui
-    self.mqtt = mqtt_client.MQTTClient(self)
-    self.pt_serial = protocol_serial.ProtocolSerial(BUS_NODE_WITH_CONNECTION_PORT, self.door_announcement_1, self.init_announcement) 
+    self.mqtt = mqtt_client.MQTTClient(self,gui)
+    self.pt_serial = protocol_serial.ProtocolSerial(BUS_NODE_WITH_CONNECTION_PORT, self.door_announcement_1, self.init_announcement,gui) 
     # self.pt_serial_distance = protocol_serial.ProtocolSerial(BUS_NODE_DISTANCE_SENSOR_ONLY_PORT, self.door_announcement_2, self.init_announcement) 
 
   def reset_variables(self):

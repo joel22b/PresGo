@@ -87,7 +87,10 @@ class TkinterGUI:
     with self.lock:
       self.system_status = system_status
       self.canvas.itemconfig(self.gui_status_text, text=system_status.value.default_message)
-
+  def set_system_error_status(self):
+    with self.lock:
+      self.system_status = SystemStatus.ERROR
+      self.canvas.itemconfig(self.gui_status_text, text=SystemStatus.ERROR.value.default_message)
   def enqueue_state(self, state, display_text=None):
     with self.lock:
       display_text = display_text if display_text is not None else state.value.default_message
@@ -128,5 +131,9 @@ class TkinterGUI:
     self.main_thread.start()
 
   def main_loop(self):
-    self.root.after(100, self.check_if_running)
-    self.root.mainloop()
+    try:
+        self.root.after(100, self.check_if_running)
+        self.root.mainloop()
+    except Exception as e:
+        self.set_system_status(SystemStatus.ERROR)
+      
