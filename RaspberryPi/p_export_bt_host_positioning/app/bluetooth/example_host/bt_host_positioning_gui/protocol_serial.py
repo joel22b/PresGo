@@ -22,8 +22,8 @@ class ProtocolSerial:
         self.callbackAnnouncementInit = callbackAnnouncementInit
         self.callbackAnnouncementDisconnect = callbackAnnouncementDisconnect
         self.gui = gui
-
-        filename = "output_"+port+".log"
+        portname = port.split('/')[-1]
+        filename = "output_"+portname+".log"
         print("Opening log file: " + filename)
         self.outFile = open(filename, 'w')
         # setup serial port for communicating with bluenrg board
@@ -37,8 +37,8 @@ class ProtocolSerial:
             self.callbacks.append(None)
     
     def serial_read_thread(self):
-        try:
-            while self.running:
+        while self.running:
+            try:
                 read_data = self.serialPort.readline()
                 if read_data: 
                     cmd = read_data.decode().rstrip().replace("\r", "")
@@ -47,10 +47,10 @@ class ProtocolSerial:
                     self.outFile.write(f"Received: {cmd}\n")
                     self.outFile.flush()
                     self.decode_message(cmd)
-        except Exception as e:
-            print('Error in protocol_serial serial_read_thread:', str(e))
-            if self.gui != None:
-                self.gui.set_system_status(SystemStatus.ERROR)
+            except Exception as e:
+                print('Error in protocol_serial serial_read_thread:', str(e))
+                if self.gui != None:
+                    self.gui.set_system_status(SystemStatus.ERROR)
 
     def serial_write(self, msg: psm.Message):
         if self.debug:

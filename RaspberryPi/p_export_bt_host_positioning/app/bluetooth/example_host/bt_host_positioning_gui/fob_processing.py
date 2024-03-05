@@ -12,12 +12,15 @@ import time
 import tkinter_gui
 from tkinter_gui import SystemStatus
 from uuid import UUID
+import fare_system
 
 
-BUS_NODE_WITH_CONNECTION_PORT = '/dev/ttyACM1' #outermost (triggered first upon entry)
-# BUS_NODE_DISTANCE_SENSOR_ONLY_PORT = '/dev/ttyACM2' #innermost distance sensor (triggered first upon exit)
+BUS_NODE_WITH_CONNECTION_PORT = '/dev/ttyACM1' # outermost (triggered first upon entry)
+# BUS_NODE_DISTANCE_SENSOR_ONLY_PORT = '/dev/ttyACM2' # innermost distance sensor (triggered first upon exit)
+PAY_ZONE_X_MAX = 2
+PAY_ZONE_Y_MAX = 2
+PAY_ZONE_Z_MAX = 50 # don't care about this dimension if it's facing upwards
 
-gui = None
 fob_processing = None
 
 class FobProcessing:
@@ -27,14 +30,15 @@ class FobProcessing:
     # setup gui and initialize global variables used by mqtt callbacks
     self.gui = tkinter_gui.TkinterGUI(self)
     # setup mqtt client and serial communication with stm board 
-    self.mqtt = mqtt_client.MQTTClient(self,gui)
-    self.pt_serial = protocol_serial.ProtocolSerial(BUS_NODE_WITH_CONNECTION_PORT, self.door_announcement_1, self.stm_init_announcement, self.disconnect_announcement, gui)
+    self.mqtt = mqtt_client.MQTTClient(self, self.gui)
+    self.pt_serial = protocol_serial.ProtocolSerial(BUS_NODE_WITH_CONNECTION_PORT, self.door_announcement_1, self.stm_init_announcement, self.disconnect_announcement, self.gui)
     self.pt_serial.send_announcement_kill() 
     # self.pt_serial_distance = protocol_serial.ProtocolSerial(BUS_NODE_DISTANCE_SENSOR_ONLY_PORT, self.door_announcement_2, self.stm_init_announcement) 
+    self.fare_sys = fare_system.FareSystem()
 
   def reset(self, init = False):
-    self.fobs_in_cylinder_status = {}
-    self.fobs_attempting_payment = []
+    self.fobs_last_in_pay_zone = {}
+    self.fobs_validating = []
     self.fobs_currently_connecting = []
     self.fobs_currently_connected = []
     self.someone_in_doorway1 = False
@@ -43,40 +47,47 @@ class FobProcessing:
     if not init:
       self.pt_serial.send_announcement_kill() 
 
-  def is_point_inside_cylinder(self, x, y, z, radius, height):
-    in_circle = x ** 2 + y ** 2 <= radius ** 2
-    in_height_range = 0 <= z <= height
-    return in_circle and in_height_range
+  def is_point_inside_pay_zone(self, x, y, z):
+    # pay zone is a recangular prism
+    return x < PAY_ZONE_X_MAX and y < PAY_ZONE_Y_MAX and z < PAY_ZONE_Z_MAX
 
   def get_fare_id(self, address: str, uuid: UUID):
     print("Fare ID: " + str(uuid) + " Address: " + address)
     self.pt_serial.send_announcement_kill()
+    (valid, balance) = self.fare_sys.validate_fare(uuid)
     with self.lock:
-      if address in self.fobs_attempting_payment:
-        self.fobs_attempting_payment.remove(address)
-      self.gui.enqueue_state(tkinter_gui.State.FAILURE if uuid == UUID(int=0) else tkinter_gui.State.SUCCESS)
+      if address in self.fobs_validating:
+        self.fobs_validating.remove(address)
+      text = "Remaining Balance: $"+str(balance)
+      state = tkinter_gui.State.SUCCESS
+      if balance == self.fare_sys.fareError:
+        text = "Error reading Fare Fob"
+        state = tkinter_gui.State.FAILURE
+      elif balance == self.fare_sys.fareNotFound:
+        text = "Invalid Fare Fob"
+        state = tkinter_gui.State.FAILURE
+      self.gui.enqueue_state(state, text)
 
   def process_message(self, x, y, z, fob_id):
-    is_fob_in_cylinder = self.is_point_inside_cylinder(x, y, z, 1, 10)
+    is_fob_in_pay_zone = self.is_point_inside_pay_zone(x, y, z)
     with self.lock:
       if not fob_id in self.fobs_currently_connecting and not fob_id in self.fobs_currently_connected:
         self.pt_serial.send_request_connect(fob_id, lambda state: self.connect_announcement(state, fob_id))
         self.fobs_currently_connecting.append(fob_id)
-      self.fobs_in_cylinder_status[fob_id] = (is_fob_in_cylinder, datetime.now())
-      #if not self.someone_in_doorway1 and not self.someone_in_doorway2:
-      if not self.someone_in_doorway1:
+      self.fobs_last_in_pay_zone[fob_id] = (is_fob_in_pay_zone, datetime.now())
+      if not self.someone_in_doorway1: # and not self.someone_in_doorway2:
         return
-      most_recent_in_cyl_id = None
-      most_recent_in_cyl_time = None
-      for id, (is_fob_in_cylinder, time_last_seen) in self.fobs_in_cylinder_status.items():
-        if is_fob_in_cylinder and (most_recent_in_cyl_time is None or time_last_seen > most_recent_in_cyl_time) and not id in self.fobs_attempting_payment:
-          most_recent_in_cyl_id = id
-          most_recent_in_cyl_time = time_last_seen
-      if most_recent_in_cyl_id is None:
+      most_recent_in_pay_zone_id = None
+      most_recent_in_pay_zone_time = None
+      for id, (is_fob_in_pay_zone, time_last_seen) in self.fobs_last_in_pay_zone.items():
+        if is_fob_in_pay_zone and (most_recent_in_pay_zone_time is None or time_last_seen > most_recent_in_pay_zone_time) and not id in self.fobs_validating:
+          most_recent_in_pay_zone_id = id
+          most_recent_in_pay_zone_time = time_last_seen
+      if most_recent_in_pay_zone_id is None:
         return
       self.gui.enqueue_state(tkinter_gui.State.VALIDATING)
-      self.fobs_attempting_payment.append(most_recent_in_cyl_id)
-      self.pt_serial.send_request_fare(most_recent_in_cyl_id, lambda uuid: self.get_fare_id(most_recent_in_cyl_id, uuid))
+      self.fobs_validating.append(most_recent_in_pay_zone_id)
+      self.pt_serial.send_request_fare(most_recent_in_pay_zone_id, lambda uuid: self.get_fare_id(most_recent_in_pay_zone_id, uuid))
       self.processed_count += 1
 
   def door_announcement_1(self, inDoorway: bool):
@@ -106,9 +117,7 @@ class FobProcessing:
 
   def stm_init_announcement(self, flags: int):
     protocol_serial.init_printout(flags)
-    # with self.lock:
-    #   self.gui.reset()
-    #   self.reset_variables()
+    self.pt_serial.check_and_set_error_status(flags)
 
   def connect_announcement(self, state: int, address: str):
     print("Connection state for " + address + ": " + str(state))
@@ -127,8 +136,6 @@ class FobProcessing:
 def signal_handler(sig, frame):
   fob_processing.gui.running = False
   fob_processing.pt_serial.running = False
-  global running
-  running = False
 
 def main():
   try:
@@ -143,11 +150,6 @@ def main():
     print('Error on main thread:', str(e))
     if fob_processing.gui:
       fob_processing.gui.set_system_status(SystemStatus.ERROR)
-  # loop on main thread until program termination
-  global running
-  while running:
-    print('running') # not printing currently??
-    time.sleep(0.5)
 
 if __name__ == "__main__":
   main()
