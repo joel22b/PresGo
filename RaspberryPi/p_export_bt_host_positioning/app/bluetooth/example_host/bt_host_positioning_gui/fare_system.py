@@ -1,6 +1,6 @@
 from uuid import UUID
 
-invalid_fare = UUID("00000000000000000000000000000000")
+invalid_fare = UUID(int=0)
 
 class FareSystem:
     db = {}
@@ -10,16 +10,15 @@ class FareSystem:
 
     def __init__(self):
         # Load initial values
-        self.db[UUID("00000000000000000000000000000001")] = 222.22
-        self.db[UUID("00000000000000000000000000000002")] = 4.04
-        self.db[UUID("00000000000000000000000000000003")] = 33.33
-        self.db[UUID("00000000000000000000000000000004")] = 0.67
-        self.db[UUID("00000000000000000000000000000005")] = 10.10
+        self.db[UUID(int=1)] = 222.22
+        self.db[UUID(int=2)] = 4.04
+        self.db[UUID(int=3)] = 33.33
+        self.db[UUID(int=4)] = 0.67
+        self.db[UUID(int=5)] = 10.10
 
     def validate_fare(self, fareUuid: UUID):
         if fareUuid == invalid_fare:
             return (False, self.fareError)
-        
         if fareUuid in self.db:
             if self.db[fareUuid] > 0:
                 self.db[fareUuid] -= self.farePrice

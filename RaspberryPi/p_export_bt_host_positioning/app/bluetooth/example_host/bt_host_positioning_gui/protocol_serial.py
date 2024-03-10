@@ -23,7 +23,7 @@ class ProtocolSerial:
         self.callbackAnnouncementDisconnect = callbackAnnouncementDisconnect
         self.gui = gui
         portname = port.split('/')[-1]
-        filename = "output_"+portname+".log"
+        filename = "Logs/output_"+portname+".log"
         print("Opening log file: " + filename)
         self.outFile = open(filename, 'w')
         # setup serial port for communicating with bluenrg board
@@ -35,12 +35,12 @@ class ProtocolSerial:
 
         for i in range(self.reqId):
             self.callbacks.append(None)
-    
+
     def serial_read_thread(self):
         while self.running:
             try:
                 read_data = self.serialPort.readline()
-                if read_data: 
+                if read_data:
                     cmd = read_data.decode().rstrip().replace("\r", "")
                     if self.debug:
                         print(f"Received: {cmd}")
@@ -49,6 +49,8 @@ class ProtocolSerial:
                     self.decode_message(cmd)
             except Exception as e:
                 print('Error in protocol_serial serial_read_thread:', str(e))
+                if str(e).startswith("'utf-8' codec can't decode byte"):
+                    continue
                 if self.gui != None:
                     self.gui.set_system_status(SystemStatus.ERROR)
 
@@ -57,7 +59,7 @@ class ProtocolSerial:
             print("["+str(msg)+"]")
         self.outFile.write("["+str(msg)+"]\n")
         self.serialPort.write(msg.__str__().encode())
-    
+
     def decode_message(self, raw: str):
         msgIdentifierStr = raw[1:4]
         if psm.MsgIdentifier.Rsp.name == msgIdentifierStr:
@@ -92,14 +94,14 @@ class ProtocolSerial:
                 self.callbackAnnouncementInit(flags)
             elif psm.MsgType.Disc.name == msgTypeStr:
                 self.callbackAnnouncementDisconnect(raw[10:22])
-    
+
     def get_request_id(self) -> int:
         tmp = self.reqId
         self.reqId += 1
         if self.reqId == 100:
             self.reqId = 0
         return tmp
-    
+
     def send_request_connect(self, address: str, callback):
         reqId = self.get_request_id()
         self.callbacks.insert(reqId, callback)
@@ -134,13 +136,12 @@ class ProtocolSerial:
         self.serial_write(msg)
 
     def check_and_set_error_status(self, flags:int):
-        print("Checking Errors in Protocol Serial:")
         for flag in psm.InitFlags:
             if not (flag.value&flags):
                 print("Error in ", flag.name)
                 if self.gui != None:
                     self.gui.set_system_status(SystemStatus.ERROR)
-    
+
 def init_str(flags: int) -> str:
     s = "Initialization complete:\n"
     for flag in psm.InitFlags:
@@ -149,6 +150,3 @@ def init_str(flags: int) -> str:
 
 def init_printout(flags: int):
     print(init_str(flags))
-    #print("Initialization complete:")
-    #for flag in psm.InitFlags:
-    #    print("\t" + flag.name.replace("_", " ") + ": " + str(bool(flag.value & flags)))

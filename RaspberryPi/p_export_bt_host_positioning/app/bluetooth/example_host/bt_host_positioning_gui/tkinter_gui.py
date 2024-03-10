@@ -35,7 +35,7 @@ class State(Enum):
 class TkinterGUI:
   def __init__(self, fob_processing):
     # setup graceful shutdown
-    self.running = True 
+    self.running = True
     # save reference of fob_processing to call its reset() function on press of the gui's reset button
     self.fob_processing = fob_processing
     # initialize person counter, system status, state and state queue handling thread
@@ -53,7 +53,7 @@ class TkinterGUI:
     self.status_template_text = self.canvas.create_text(self.canvas.bbox(self.status_text)[0], WINDOW_HEIGHT_PX-WINDOW_PADDING_PX, text=STATUS_TEXT_TEMPLATE, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='se')
     lower_text_bounding_box = self.canvas.bbox(self.person_counter_text)
     self.canvas.create_window(WINDOW_WIDTH_PX/2, WINDOW_HEIGHT_PX-6, window=tkinter.Button(self.root, text=RESET_BUTTON_TEXT, font=(FONT, FONT_SIZE, FONT_WEIGHT), activebackground=State.FAILURE.value.color, highlightthickness=0, borderwidth=0, command=self.reset), anchor='s')
-    bottom_rectangle = self.canvas.create_rectangle(lower_text_bounding_box[0]-WINDOW_PADDING_PX, lower_text_bounding_box[1]-WINDOW_PADDING_PX, WINDOW_WIDTH_PX, lower_text_bounding_box[3]+WINDOW_PADDING_PX, fill='#3B3B3B')                                 
+    bottom_rectangle = self.canvas.create_rectangle(lower_text_bounding_box[0]-WINDOW_PADDING_PX, lower_text_bounding_box[1]-WINDOW_PADDING_PX, WINDOW_WIDTH_PX, lower_text_bounding_box[3]+WINDOW_PADDING_PX, fill='#3B3B3B')
     self.canvas.tag_lower(bottom_rectangle, self.person_counter_text)
     self.main_text = self.canvas.create_text(WINDOW_WIDTH_PX/2, (WINDOW_HEIGHT_PX-(lower_text_bounding_box[3]-lower_text_bounding_box[1]+2*WINDOW_PADDING_PX))/2, text=self.state.value.default_message, font=(FONT, FONT_SIZE, FONT_WEIGHT), fill='black', anchor='center')
 
@@ -71,12 +71,6 @@ class TkinterGUI:
         self.canvas.coords(self.status_template_text, self.canvas.bbox(self.status_text)[0], WINDOW_HEIGHT_PX-WINDOW_PADDING_PX)
         self.canvas.itemconfig(self.main_text, text=self.state.value.default_message)
         self.canvas.config(bg=self.state.value.color)
-
-  def check_if_running(self):
-    if not self.running:
-      self.root.destroy()
-    else:
-      self.root.after(100, self.check_if_running)
 
   def get_person_counter_string(self):
     return f'{PERSON_COUNTER_TEXT_TEMPLATE}{self.num_people_on_bus}'
@@ -107,7 +101,7 @@ class TkinterGUI:
     try:
       while self.running:
         with self.lock:
-          if not self.state_queue:
+          if len(self.state_queue) == 0:
             continue
           state, display_text = None, None
           # when in 'VALIDATING' state, ensure the result of the validation is the next state selected
@@ -123,7 +117,7 @@ class TkinterGUI:
             if not found_validation_result:
               if (datetime.now() - self.validation_start_time).total_seconds() < VALIDATION_UI_TIMEOUT_S: # not 100% sure this timeout working
                 continue
-              # time in validation exceeds timeout, assume no message 
+              # time in validation exceeds timeout, assume no there will be no response from stm board
               self.validation_start_time = None
               state = State.FAILURE
               display_text = state.value.default_message
@@ -143,9 +137,11 @@ class TkinterGUI:
       print('Error in tkinter_gui state queue loop:', str(e))
       self.set_system_status(SystemStatus.ERROR)
 
-  def start_main_loop(self):
-    self.main_thread = threading.Thread(target=self.main_loop(), daemon=True)
-    self.main_thread.start()
+  def check_if_running(self):
+    if not self.running:
+      self.root.destroy()
+    else:
+      self.root.after(100, self.check_if_running)
 
   def main_loop(self):
     try:
@@ -154,4 +150,3 @@ class TkinterGUI:
     except Exception as e:
       print('Error in tkinter_gui main loop:', str(e))
       self.set_system_status(SystemStatus.ERROR)
-      
