@@ -1,9 +1,9 @@
 {
    "version":1,
-   "id":"positioning-test_room",
+   "id":"positioning",
    "estimationModeLocation":"SL_RTL_LOC_ESTIMATION_MODE_THREE_DIM_FAST_RESPONSE",
-   "validationModeLocation":"SL_RTL_LOC_MEASUREMENT_VALIDATION_MEDIUM",
-   "estimationIntervalSec":0.005,
+   "validationModeLocation":"SL_RTL_LOC_MEASUREMENT_VALIDATION_HIGH",
+   "estimationIntervalSec":0.01,
    "locationFiltering":true,
    "locationFilteringWeight":0.1,
    "numberOfSequenceIds":6,
