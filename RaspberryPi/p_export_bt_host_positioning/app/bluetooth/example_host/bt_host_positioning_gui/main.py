@@ -1,6 +1,5 @@
 import fob_processing
 import signal
-import time
 from tkinter_gui import SystemStatus
 
 fob_processing_obj = None

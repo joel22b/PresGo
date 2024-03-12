@@ -1,9 +1,0 @@
-[	Ann:Kill
-]
-Received: 	Ann:Init:03
-Initialization complete:
-	Distance Sensor: True
-	Bluetooth Controller: True
-[	Req:01:Conn:4C5BB3CA9C47
-]
-Received: 	Ann:Door:T

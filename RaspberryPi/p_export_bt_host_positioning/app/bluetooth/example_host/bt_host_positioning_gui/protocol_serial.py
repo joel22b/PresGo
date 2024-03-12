@@ -17,7 +17,7 @@ class ProtocolSerial:
     callbackAnnouncementDisconnect = None
     gui = None
 
-    def __init__(self, port: str, callbackAnnouncementDoor, callbackAnnouncementInit, callbackAnnouncementDisconnect, gui):
+    def __init__(self, port: str, gui, callbackAnnouncementDoor, callbackAnnouncementInit, callbackAnnouncementDisconnect = None):
         self.callbackAnnouncementDoor = callbackAnnouncementDoor
         self.callbackAnnouncementInit = callbackAnnouncementInit
         self.callbackAnnouncementDisconnect = callbackAnnouncementDisconnect
@@ -26,14 +26,10 @@ class ProtocolSerial:
         filename = "Logs/output_"+portname+".log"
         print("Opening log file: " + filename)
         self.outFile = open(filename, 'w')
-        # setup serial port for communicating with bluenrg board
-        # /dev/ttyACM0 if plugged in before or without antenna array, else /dev/ttyACM1
         self.serialPort = serial.Serial(port=port, baudrate=115200, timeout=10)
-        # serial read on separate thread to not block main gui thread
         thread_ser_read = threading.Thread(target=self.serial_read_thread, daemon=True, args=())
         thread_ser_read.start()
-
-        for i in range(self.reqId):
+        for _ in range(self.reqId):
             self.callbacks.append(None)
 
     def serial_read_thread(self):

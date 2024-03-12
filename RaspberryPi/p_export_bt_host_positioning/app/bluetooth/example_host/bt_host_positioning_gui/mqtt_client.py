@@ -12,7 +12,7 @@ DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "../bt_host_positioning
 DEFAULT_CONNECTION = {"host": "localhost", "port": 1883}
 
 class MQTTClient:
-  def __init__(self, fob_processing,gui):
+  def __init__(self, fob_processing, gui):
     # self.running = True # TODO probably restart this on reset signal after you stop the gui
     self.fob_processing = fob_processing
     self.gui = gui
@@ -54,14 +54,14 @@ class MQTTClient:
 
   def on_connect(self, client, userdata, flags, rc):
     ''' Called when a CONNACK response is received from the server. '''
-    print("Connected with result code " + str(rc))
+    print("Connected to MQTT server with result code " + str(rc))
     topic = "silabs/aoa/position/{}/#".format(userdata.positioning_id)
-    print("Subscribe for ", topic)
+    print("Subscribe to MQTT topic:", topic)
     client.subscribe(topic)
-    for loc_id in userdata.locators:
-      topic = "silabs/aoa/angle/{}/#".format(loc_id)
-      print("Subscribe for ", topic)
-      client.subscribe(topic)
+    # for loc_id in userdata.locators:
+    #   topic = "silabs/aoa/angle/{}/#".format(loc_id)
+    #   print("Subscribe to MQTT topic:", topic)
+    #   client.subscribe(topic)
 
   def on_message(self, client, userdata, msg):
     ''' Called when a PUBLISH message is received from the server. '''
