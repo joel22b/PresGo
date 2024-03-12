@@ -5,8 +5,6 @@
 #include "rf_driver_hal.h"
 #include "ble_const.h" 
 #include "bluenrg_lp_stack.h"
-#include "app_state.h"
-#include "profile.h"
 #include "MultipleConnections_config.h"
 #include "bluenrg_lp_evb_config.h"
 #include "rf_driver_hal_vtimer.h"
@@ -24,7 +22,6 @@
 #include "distance_sensor.h"
 
 /* External variables --------------------------------------------------------*/
-uint8_t button1_pressed, button2_pressed;
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/   
 /* Private macro -------------------------------------------------------------*/
@@ -73,7 +70,7 @@ void ModulesInit(void)
   /* BlueNRG-LP stack init */
   ret = BLE_STACK_Init(&BLE_STACK_InitParams);
   if (ret != BLE_STATUS_SUCCESS) {
-    printf("Error in BLE_STACK_Init() 0x%02x\r\n", ret);
+    //printf("Error in BLE_STACK_Init() 0x%02x\r\n", ret);
     while(1);
   }
 
@@ -119,7 +116,7 @@ void ModulesTick(void)
   /* Configure I/O communication channel */
   BSP_COM_Init(ps_recv_callback);
 
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET);
+  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET);
 
   ModulesInit();
   
@@ -128,9 +125,10 @@ void ModulesTick(void)
 
   ds_init();
 
-  BSP_PB_Init(BSP_PUSH1, BUTTON_MODE_EXTI);
-  BSP_PB_Init(BSP_PUSH2, BUTTON_MODE_EXTI);
+  //BSP_PB_Init(BSP_PUSH1, BUTTON_MODE_EXTI);
+  //BSP_PB_Init(BSP_PUSH2, BUTTON_MODE_EXTI);
   BSP_LED_Init(BSP_LED3);
+  //BSP_LED_On(BSP_LED3);
 
   /* Init Device */
   //ret = DeviceInit();
@@ -163,6 +161,8 @@ void ModulesTick(void)
 
     ds_tick();
 
+    //BSP_LED_Off(BSP_LED3);
+
     /* Request to go to sleep */
     HAL_PWR_MNGR_Request(POWER_SAVE_LEVEL_RUNNING, wakeupIO, &stopLevel);
   }
@@ -171,12 +171,6 @@ void ModulesTick(void)
 
 void HAL_PWR_MNGR_WakeupIOCallback(uint32_t source)
 {  
-  if(source & BSP_PUSH1_WAKEUP){    
-    button1_pressed = TRUE;
-  }
-  if(source & BSP_PUSH2_WAKEUP){
-    button2_pressed = TRUE;
-  }  
 }
 
 /* Event used to notify the Host that a hardware failure has occurred in the Controller. 
@@ -185,7 +179,10 @@ void hci_hardware_error_event(uint8_t Hardware_Code)
 {
   if (Hardware_Code <= 0x03)
   {
+	  BSP_LED_On(BSP_LED3);
+	  //printf("HCI Hardware Error: 0x%02X\n\r", Hardware_Code);
     NVIC_SystemReset();
+	  //while(1){}
   }
 }
 

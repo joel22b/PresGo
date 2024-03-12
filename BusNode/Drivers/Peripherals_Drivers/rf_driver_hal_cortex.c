@@ -73,6 +73,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "rf_driver_hal.h"
 
+#include "bluenrg_lp_evb_led.h"
+
 /** @addtogroup RF_DRIVER_HAL_Driver
   * @{
   */
@@ -168,8 +170,11 @@ void HAL_NVIC_DisableIRQ(IRQn_Type IRQn)
   */
 void HAL_NVIC_SystemReset(void)
 {
+	BSP_LED_On(BSP_LED3);
+	//printf("HAL NVIC Reset\n\r");
   /* System Reset */
   NVIC_SystemReset();
+	//while(1){}
 }
 
 /**

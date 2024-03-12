@@ -28,6 +28,8 @@
 #include "rf_driver_ll_gpio.h"
 #include "rf_driver_ll_radio_2g4.h"
 
+#include "bluenrg_lp_evb_led.h"
+
 NO_INIT_SECTION(crash_info_t CrashInfoRam, ".crash_info_ram_vr");
 
 /** @addtogroup BlueNRG_LP_Miscellaneous_Utilities
@@ -123,8 +125,11 @@ void HAL_GetCrashInfo(crash_info_t *crashInfo)
 }
 void HAL_CrashHandler(uint32_t msp, uint32_t signature)
 {
+	NMI_SIGNATURE;
   volatile uint32_t * crash_info = (volatile uint32_t *)&CrashInfoRam;
   register uint32_t reg_content;
+  printf("HAL Crash Handler msp=0x%08X signature=0x%08X\n\r", msp, signature);
+  //BSP_LED_On(BSP_LED3);
   /* Init to zero the crash_info RAM locations */
   for (reg_content=0; reg_content<NMB_OF_EXCEP_RAM_WORD; reg_content++) {
     crash_info[reg_content] = 0;
@@ -139,7 +144,8 @@ void HAL_CrashHandler(uint32_t msp, uint32_t signature)
         (ptr <= ((uint32_t *) _MEMORY_RAM_END_)))
       crash_info[reg_content] = *ptr;
   }
-  NVIC_SystemReset();
+  //NVIC_SystemReset();
+  while(1){}
 }
 
 uint8_t HAL_DBmToPALevel(int8_t TX_dBm)

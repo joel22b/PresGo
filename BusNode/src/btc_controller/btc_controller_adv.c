@@ -107,24 +107,29 @@ void btc_adv_stop() {
 void btc_adv_scan_start() {
 	tBleStatus ret = aci_gap_start_procedure(GAP_GENERAL_CONNECTION_ESTABLISHMENT_PROC, LE_1M_PHY_BIT, 0, 0);
 
-	if (ret != BLE_STATUS_SUCCESS) {
-		//printf("Error while starting scanning: 0x%02X\n\r", ret);
+	if (ret != BLE_STATUS_SUCCESS && ret != BLE_ERROR_COMMAND_DISALLOWED) {
+		printf("Error while starting scanning: 0x%02X\n\r", ret);
+		if (ret == BLE_ERROR_MEMORY_CAPACITY_EXCEEDED) {
+			btc_connect_disconnect_scanning();
+		}
 	}
 }
 
 void btc_adv_scan_stop() {
+	//printf("btc_adv_scan_stop\n\r");
 	tBleStatus ret = aci_gap_terminate_proc(GAP_GENERAL_CONNECTION_ESTABLISHMENT_PROC);
 	if (ret != BLE_STATUS_SUCCESS) {
-		//printf("Error while stopping scanning: 0x%02X\n\r", ret);
+		printf("Error while stopping scanning: 0x%02X\n\r", ret);
 	}
 }
 
 void btc_adv_callback(uint8_t Num_Reports, Advertising_Report_t Advertising_Report[]) {
+	//printf("Adv cb\n\r");
 	for (uint8_t i = 0; i < Num_Reports; i++) {
 		if (btc_adv_match(Advertising_Report[i].Address)) {
 			//printf("Good Adv found!\n\r");
 			// Device found!
-			btc_adv_scan_stop();
+			//btc_adv_scan_stop();
 			btc_connect_start(Advertising_Report[i].Address_Type, Advertising_Report[i].Address);
 			return;
 		}
@@ -133,23 +138,24 @@ void btc_adv_callback(uint8_t Num_Reports, Advertising_Report_t Advertising_Repo
 
 uint8_t btc_adv_match(uint8_t* addr) {
 	for (uint8_t scan_adv = 0; scan_adv < BTC_CONNECTIONS_NUM; scan_adv++) {
-			if (btc_connect_get(scan_adv)->state != btc_connect_state_scanning) {
-				continue;
-			}
+		btc_connection_t* conn = btc_connect_get(scan_adv);
+		if (conn->state != btc_connect_state_scanning) {
+			continue;
+		}
 
-			uint8_t match = 1;
-			for (uint8_t i = 0; i < BTC_ADDRESS_LEN; i++) {
-				if (addr[i] != btc_connect_get(scan_adv)->address[i]) {
-					match = 0;
-					break;
-				}
-			}
-			if (match) {
-				btc_connect_get(scan_adv)->state = btc_connect_state_connecting;
-				return 1;
+		uint8_t match = 1;
+		for (uint8_t i = 0; i < BTC_ADDRESS_LEN; i++) {
+			if (addr[i] != conn->address[i]) {
+				match = 0;
+				break;
 			}
 		}
-		return 0;
+		if (match) {
+			btc_connect_get(scan_adv)->state = btc_connect_state_connecting;
+			return 1;
+		}
+	}
+	return 0;
 }
 
 /* =================================

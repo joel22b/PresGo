@@ -14,17 +14,20 @@
 #include "protocol_serial_types.h"
 #include "btc_controller.h"
 
-uint8_t ps_is_init = 0;
+#include "bluenrg_lp_evb_led.h"
+
+static uint8_t ps_is_init = 0;
 
 #define PS_MSG_BUFFER_LEN 128
 #define PS_MSG_NUM 8
-uint8_t ps_msg_buffer[PS_MSG_BUFFER_LEN];
-uint8_t ps_msg_buffer_index = 0;
-uint8_t ps_msg_buffer_record = 0;
-uint8_t ps_msg[PS_MSG_NUM][PS_MSG_BUFFER_LEN];
-uint8_t ps_msg_len[PS_MSG_NUM];
+static uint8_t ps_msg_buffer[PS_MSG_BUFFER_LEN];
+static uint8_t ps_msg_buffer_index = 0;
+static uint8_t ps_msg_buffer_record = 0;
+static uint8_t ps_msg[PS_MSG_NUM][PS_MSG_BUFFER_LEN];
+static uint8_t ps_msg_len[PS_MSG_NUM];
 
 void ps_recv_callback(uint8_t* data, uint16_t len) {
+	BSP_LED_Off(BSP_LED3);
 	//printf("Len=%d\n\r", len);
 	if (len > 0) {
 		for (uint16_t i = 0; i < len; i++) {
@@ -43,8 +46,10 @@ void ps_recv_byte(uint8_t byte) {
 	else if (ps_msg_buffer_record) {
 		ps_msg_buffer[ps_msg_buffer_index++] = byte;
 		if (byte == PS_END_CHAR) {
+			//BSP_LED_On(BSP_LED3);
 			ps_recv_add_msg();
 			ps_msg_buffer_record = 0;
+			//BSP_LED_Off(BSP_LED2);
 		}
 	}
 	//ps_msg_buffer[ps_msg_buffer_index++] = byte;
@@ -52,6 +57,8 @@ void ps_recv_byte(uint8_t byte) {
 
 void ps_recv_add_msg() {
 	if (ps_is_init) {
+		//BSP_LED_On(BSP_LED3);
+		//printf("PS add message\n\r");
 		for (uint8_t i = 0; i < PS_MSG_NUM; i++) {
 			if (ps_msg_len[i] == 0) {
 				ps_msg_len[i] = ps_msg_buffer_index;
@@ -62,10 +69,10 @@ void ps_recv_add_msg() {
 			}
 		}
 		// Error no spot found
-		printf("Error no spot found in ps_msg");
+		//printf("Error no spot found in ps_msg");
 	}
 	else {
-		printf("Error not initialized\n\r");
+		//printf("Error not initialized\n\r");
 	}
 }
 
@@ -81,6 +88,7 @@ void ps_process() {
 	if (ps_is_init) {
 		for (uint8_t i = 0; i < PS_MSG_NUM; i++) {
 			if (ps_msg_len[i] != 0) {
+				//BSP_LED_Off(BSP_LED3);
 				ps_process_msg(i);
 				ps_msg_len[i] = 0;
 			}
@@ -89,7 +97,8 @@ void ps_process() {
 }
 
 void ps_process_msg(uint8_t index) {
-	//printf("%.*s\r", ps_msg_len[index], ps_msg[index]);
+	//BSP_LED_Off(BSP_LED3);
+	//printf("Process=%.*s\r", ps_msg_len[index], ps_msg[index]);
 	if (ps_msg_len[index] < PS_MIN_MSG) {
 		// Invalid message, ignore
 		return;
@@ -157,6 +166,7 @@ void ps_process_msg(uint8_t index) {
 		}
 	}
 	else if (ps_cmp(&ps_msg[index][parse_index], PS_IDENTIFIER_ANNOUNCEMENT, PS_IDENTIFIER_LEN)) {
+		//printf("Ann\n\r");
 		parse_index += PS_IDENTIFIER_LEN;
 		if (ps_msg[index][parse_index] != PS_SEPARATOR_CHAR) {
 			// Missing separator, ignore
@@ -167,6 +177,7 @@ void ps_process_msg(uint8_t index) {
 		if (ps_cmp(&ps_msg[index][parse_index], PS_TYPE_KILL, PS_TYPE_LEN)) {
 			parse_index += PS_TYPE_LEN + 1;
 			// Announcement to Kill
+			BSP_LED_On(BSP_LED3);
 			NVIC_SystemReset();
 		}
 	}

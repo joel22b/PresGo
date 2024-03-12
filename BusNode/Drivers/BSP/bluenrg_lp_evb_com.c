@@ -251,16 +251,24 @@ uint8_t BSP_COM_Read(uint8_t *pData)
 
 void BSP_COM_IRQHandler(void)
 {
+	//BSP_LED_Off(BSP_LED3);
   uint8_t read_data; 
   
   /* If the user callback is not NULL */
   if(BSP_COM_RxDataCb.RxDataUserCb != NULL) {
+	  //BSP_LED_Off(BSP_LED3);
 
     /* If the RX FIFO is Not Empty */
     if(LL_USART_IsActiveFlag_RXNE(BSP_UART) == 1)   {
+    	//BSP_LED_Off(BSP_LED3);
 
       /* Read a byte from the RX FIFO */
       read_data = LL_USART_ReceiveData8(BSP_UART);
+      //BSP_LED_Off(BSP_LED3);
+      /*if (read_data == 'T') {
+    	  printf("0x%08X\n\r", BSP_COM_RxDataCb.RxDataUserCb);
+    	  BSP_LED_Off(BSP_LED3);
+      }*/
       
       /* Send the data received to the user RX callback */
       BSP_COM_RxDataCb.RxDataUserCb(&read_data, 1);
