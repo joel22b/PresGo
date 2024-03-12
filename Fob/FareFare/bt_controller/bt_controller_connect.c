@@ -42,7 +42,7 @@ uint8_t* btc_connect_get_address(uint8_t connection) {
 void
 btc_connect_openned (sl_bt_evt_connection_opened_t *evt_connect_openned)
 {
-  //app_log_info("Connection opened: %d\n\r", evt_connect_openned->connection);
+  app_log_info("Connection opened: %d\n\r", evt_connect_openned->connection);
   /*app_log_info("Client address: %02X:%02X:%02X:%02X:%02X:%02X\n\r",
                evt_connect_openned->address.addr[5],
                evt_connect_openned->address.addr[4],
@@ -71,8 +71,7 @@ btc_connect_openned (sl_bt_evt_connection_opened_t *evt_connect_openned)
 void
 btc_connect_closed (sl_bt_evt_connection_closed_t *evt_connect_closed)
 {
-  //app_log_info("Connection closed: %d\n\r",
-  //             evt_connect_closed->connection);
+  app_log_info("Connection closed: %d\n\r", evt_connect_closed->connection);
 
   // Clear connection handle
   btc_connect_handle_t* handle = btc_get_connect_handle(evt_connect_closed->connection);
@@ -139,6 +138,7 @@ void btc_connect_gatt_characteristic(sl_bt_evt_gatt_server_characteristic_status
 }
 
 sl_status_t btc_connect_tx_data(uint8_t connection, uint8array* data) {
+  app_log_info("Sending\n");
   btc_connect_handle_t* handle = btc_get_connect_handle(connection);
   if (handle->tx == 0x0000) {
       // Handle not configured properly
@@ -150,7 +150,7 @@ sl_status_t btc_connect_tx_data(uint8_t connection, uint8array* data) {
 }
 
 void btc_connect_rx_data(sl_bt_evt_gatt_server_user_write_request_t* evt_write_request) {
-  //app_log_info("Received data: opcode 0x%02X\n\r", evt_write_request->att_opcode);
+  app_log_info("Received data: opcode 0x%02X\n\r", evt_write_request->att_opcode);
   if (evt_write_request->att_opcode == sl_bt_gatt_write_request) {
       sl_status_t ret_val = sl_bt_gatt_server_send_user_write_response(
           evt_write_request->connection, evt_write_request->characteristic, 0);
