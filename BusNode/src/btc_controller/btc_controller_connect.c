@@ -25,7 +25,7 @@ void btc_connect_init() {
 
 	/* Since we need to transfer notifications of 244 bytes in a single packet, the LL payload must be
 	244 bytes for application data + 3 bytes for ATT header + 4 bytes for L2CAP header. */
-	tBleStatus ret = hci_le_write_suggested_default_data_length(BTC_MAX_DATA_LENGTH + 3 + 4, 2120);
+	tBleStatus ret = hci_le_write_suggested_default_data_length(251/*BTC_MAX_DATA_LENGTH + 3 + 4*/, 2120);
 	if (ret) {
 		printf("Failed to set default data length: 0x%02X\n\r", ret);
 		return;
@@ -127,6 +127,9 @@ void btc_connect_tick() {
 					btc_connect_rx_data(conn, event->rx_data.data, event->rx_data.dataLength);
 				}
 				break;
+			case btc_event_adv_found:
+				btc_connect_start(event->adv_found.addressType, event->adv_found.address);
+				break;
 			default:
 				printf("Unknown BTC event: 0x%02X\n\r", event->id);
 				break;
@@ -158,7 +161,9 @@ btc_connection_t* btc_connect_get_connection(uint16_t connection) {
 }
 
 void btc_connect_request(uint8_t reqId, uint8_t* addr) {
-	printf("Connection request\n\r");
+	//printf("Connect Request ");
+	//BSP_COM_PrintCb();
+	//printf("Connection request\n\r");
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		if (btc_address_match(btc_connections[i].address, addr) && btc_connections[i].state != btc_connect_state_empty) {
 			// Connection exists
@@ -179,7 +184,7 @@ void btc_connect_request(uint8_t reqId, uint8_t* addr) {
 	//printf("Connection requested: %d\n\r", reqId);
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		if (btc_connections[i].state == btc_connect_state_empty) {
-			printf("btc_connect_request Found new: i=%d\n\r", i);
+			//printf("btc_connect_request Found new: i=%d\n\r", i);
 			btc_connections[i].state = btc_connect_state_scanning;
 			btc_connections[i].reqId_connect = reqId;
 			btc_connections[i].reqId_fare = 0;
@@ -196,6 +201,9 @@ void btc_connect_request(uint8_t reqId, uint8_t* addr) {
 			break;
 		}
 	}
+
+	//printf("Connect Request b ");
+	//BSP_COM_PrintCb();
 }
 
 void btc_connect_fare_request(uint8_t reqId, uint8_t* addr) {
@@ -226,12 +234,17 @@ void btc_connect_fare_request(uint8_t reqId, uint8_t* addr) {
 }
 
 void btc_connect_start(uint8_t addrType, uint8_t* addr) {
+	//printf("Connect Start a ");
+	//BSP_COM_PrintCb();
 	btc_adv_scan_stop();
 	//printf("Starting connection\n\r");
 	tBleStatus ret = aci_gap_create_connection(LE_1M_PHY_BIT, addrType, addr);
 	if (ret != BLE_STATUS_SUCCESS) {
 		printf("Failed to start connection 0x%02X\n\r", ret);
 	}
+
+	//printf("Connect Start b ");
+	//BSP_COM_PrintCb();
 
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		if (btc_connections[i].state == btc_connect_state_scanning
@@ -240,9 +253,13 @@ void btc_connect_start(uint8_t addrType, uint8_t* addr) {
 			break;
 		}
 	}
+	//printf("Connect Start c ");
+	//BSP_COM_PrintCb();
 }
 
 void btc_connect_finish(uint16_t connection, uint8_t* addr) {
+	//printf("Connect Finished a ");
+	//BSP_COM_PrintCb();
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		if (btc_connections[i].state == btc_connect_state_connecting
 				&& btc_address_match(btc_connections[i].address, addr)) {
@@ -261,6 +278,9 @@ void btc_connect_finish(uint16_t connection, uint8_t* addr) {
 	if (btc_connect_should_scan()) {
 		btc_adv_scan_start();
 	}
+
+	//printf("Connect Finished ");
+	//BSP_COM_PrintCb();
 }
 
 void btc_connect_disconnect(btc_connection_t* conn) {
@@ -295,7 +315,7 @@ void btc_connect_proc_complete(btc_connection_t* conn, uint8_t error) {
 		case btc_connect_state_enable_notifications:
 			conn->state = btc_connect_state_connected;
 			if (conn->reqId_connect != 0 && !conn->ps_rsp_connect) {
-				BSP_LED_On(BSP_LED3);
+				//BSP_LED_On(BSP_LED3);
 				// TODO: Add state output
 				conn->ps_rsp_connect = 1;
 				ps_send_rsp_connect(conn->reqId_connect, 0);
@@ -305,6 +325,8 @@ void btc_connect_proc_complete(btc_connection_t* conn, uint8_t error) {
 				}
 				//BSP_LED_Off(BSP_LED3);
 			}
+			//printf("End Connect ");
+			//BSP_COM_PrintCb();
 			break;
 		case btc_connect_state_connected:
 			// Response to write
@@ -406,7 +428,7 @@ void btc_connect_rx_data(btc_connection_t* conn, uint8_t* data, uint16_t len) {
 	    		HAL_VTIMER_StopTimer(&conn->timer_fare);
 	    	}
 	    	//btc_connect_disconnect(conn);
-	    	printf("Sending done msg\n\r");
+	    	//printf("Sending done msg\n\r");
 	    	btc_connect_tx_request(conn, pt_req_done);
 	    	break;
 
@@ -485,7 +507,7 @@ void btc_connect_timeout_fare(void* data) {
 uint8_t btc_connect_should_scan() {
 	for (uint8_t i = 0; i < BTC_CONNECTIONS_NUM; i++) {
 		if (btc_connections[i].state == btc_connect_state_scanning) {
-			printf("Scanning needed i=%d\n\r", i);
+			//printf("Scanning needed i=%d\n\r", i);
 			return 1;
 		}
 	}

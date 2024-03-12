@@ -152,6 +152,7 @@ void BSP_COM_Init(BSP_COM_RxDataCb_t pRxDataCb)
   /* If the user callback is not NULL */
   if(pRxDataCb != NULL) {
     /* Record the user callback for handling the RX data */
+	  //printf("Change 0x%08X\n\r", pRxDataCb);
     BSP_COM_RxDataCb.RxDataUserCb = pRxDataCb;
 
     /* Enable the RX not empty interrupt */
@@ -265,15 +266,24 @@ void BSP_COM_IRQHandler(void)
       /* Read a byte from the RX FIFO */
       read_data = LL_USART_ReceiveData8(BSP_UART);
       //BSP_LED_Off(BSP_LED3);
-      /*if (read_data == 'T') {
-    	  printf("0x%08X\n\r", BSP_COM_RxDataCb.RxDataUserCb);
-    	  BSP_LED_Off(BSP_LED3);
-      }*/
+      //if (read_data == 'T' || read_data == '\n') {
+    	  //printf("0x%08X\n\r", BSP_COM_RxDataCb.RxDataUserCb);
+    	  //BSP_LED_Off(BSP_LED3);
+      //}
       
       /* Send the data received to the user RX callback */
       BSP_COM_RxDataCb.RxDataUserCb(&read_data, 1);
     }
   }
+}
+
+void BSP_COM_PrintCb(void) {
+	printf("CB=0x%08X Loc=0x%08X\n\r", BSP_COM_RxDataCb.RxDataUserCb, &BSP_COM_RxDataCb);
+}
+
+void BSP_COM_SetCb(BSP_COM_RxDataCb_t pRxDataCb) {
+	//printf("Change 0x%08X\n\r", pRxDataCb);
+	BSP_COM_RxDataCb.RxDataUserCb = pRxDataCb;
 }
 
 

@@ -4,6 +4,9 @@
 #include "stdlib.h"
 #include "string.h"
 
+#include "bluenrg_lp_evb_led.h"
+#include "protocol_serial/protocol_serial.h"
+
 #define BTC_EVENT_EMPTY 0x00
 #define BTC_EVENT_READY	0x01
 #define BTC_EVENT_BUSY	0x02
@@ -17,6 +20,7 @@ void btc_event_init() {
 	for (uint8_t i = 0; i < BTC_EVENTS_NUM; i++) {
 		btc_events_indexes[i] = BTC_EVENT_EMPTY;
 	}
+	//printf("size=%d size2=%d\n\r", sizeof(btc_event_t), sizeof(btc_event_rx_data_t));
 }
 
 btc_event_t* btc_event_next(uint8_t* index) {
@@ -36,10 +40,16 @@ void btc_event_free(uint8_t index) {
 }
 
 void btc_event_add(btc_event_t* event) {
+	BSP_COM_SetCb(ps_recv_callback);
 	for (uint8_t i = 0; i < BTC_EVENTS_NUM; i++) {
 		if (btc_events_indexes[i] == BTC_EVENT_EMPTY) {
+			//printf("Event a 0x%02X ", event->id);
+			//BSP_COM_PrintCb();
+			//printf("a=0x%08X b=0x%08X\n\r", &btc_events[i], event);
 			memcpy(&btc_events[i], event, sizeof(btc_event_t));
 			btc_events_indexes[i] = BTC_EVENT_READY;
+			//printf("Event b 0x%02X ", event->id);
+			//BSP_COM_PrintCb();
 			//printf("Added: 0x%02X\n\r", event->id);
 			return;
 		}
@@ -133,56 +143,6 @@ void aci_gatt_clt_proc_complete_event(uint16_t Connection_Handle,
 	event.proc_complete.connection = Connection_Handle;
 	event.proc_complete.error = Error_Code;
 	btc_event_add(&event);
-
-	/*btc_connection_t* conn = btc_connect_get_connection(Connection_Handle);
-	if (conn == NULL) {
-		if (Error_Code != BLE_STATUS_SUCCESS) {
-			printf("Procedure terminated with error 0x%02X (0x%04X) could not map connection handle to btc_connections\n\r",
-					Error_Code, Connection_Handle);
-		}
-		return;
-	}
-
-	if(Error_Code != BLE_STATUS_SUCCESS){
-		printf("Procedure terminated with error 0x%02X (0x%04X) state=0x%02X.\r\n", Error_Code, Connection_Handle, conn->state);
-		conn->state = btc_connect_state_failed;
-		return;
-	}
-
-	switch (conn->state) {
-		case btc_connect_state_discover_config:
-			printf("State: discover config\n\r");
-			btc_connect_discover_services(conn);
-			break;
-		case btc_connect_state_discover_service:
-			if (conn->service_start != 0) {
-				printf("State: discover services\n\r");
-				btc_connect_discover_characteristics(conn);
-			}
-			break;
-		case btc_connect_state_discover_characteristic:
-			if (conn->tx != 0) {
-				printf("State: enable notifications\n\r");
-				btc_connect_enable_notifications(conn);
-			}
-			break;
-		case btc_connect_state_enable_notifications:
-			conn->state = btc_connect_state_connected;
-			printf("State: connected\n\r");
-			if (conn->ps_fare) {
-				SEND = 1;
-				SEND_conn = conn;
-			}
-			//btc_connect_tx_request(conn, pt_req_fare_id);
-			break;
-		case btc_connect_state_connected:
-			// Response to write
-			// TODO: Add logic maybe?
-			break;
-		default:
-			printf("Unknown procedure completed: 0x%02X\n\r", conn->state);
-			break;
-	}*/
 }
 
 void aci_gatt_clt_notification_event(uint16_t Connection_Handle,
@@ -195,6 +155,9 @@ void aci_gatt_clt_notification_event(uint16_t Connection_Handle,
 				Attribute_Value_Length, BTC_MAX_DATA_LENGTH);
 		return;
 	}
+	//printf("Att=0x%08X 0x%08X\n\r", Attribute_Value, &Attribute_Value[0]);
+	//printf("RX ");
+	//BSP_COM_PrintCb();
 
 	btc_event_t event;
 	event.id = btc_event_rx_data;

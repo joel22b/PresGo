@@ -38,7 +38,7 @@
 #define NUM_GATT_ATTRIBUTES     (NUM_APP_GATT_SERVICES_CONF + NUM_APP_GATT_ATTRIBUTES_CONF)
 
 /* Set supported max value for ATT_MTU enabled by the application */
-#define MAX_ATT_MTU_CONF             (67)
+#define MAX_ATT_MTU_CONF             (247)
 
 /* Additional number of memory blocks  to be added to the minimum */
 #define OPT_MBLOCKS_CONF		(38)

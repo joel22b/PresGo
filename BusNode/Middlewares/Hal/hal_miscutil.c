@@ -144,8 +144,8 @@ void HAL_CrashHandler(uint32_t msp, uint32_t signature)
         (ptr <= ((uint32_t *) _MEMORY_RAM_END_)))
       crash_info[reg_content] = *ptr;
   }
-  //NVIC_SystemReset();
-  while(1){}
+  NVIC_SystemReset();
+  //while(1){}
 }
 
 uint8_t HAL_DBmToPALevel(int8_t TX_dBm)

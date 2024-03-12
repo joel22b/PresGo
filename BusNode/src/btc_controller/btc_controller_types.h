@@ -55,6 +55,7 @@ typedef enum {
 	btc_event_disconnect	= 0x02,
 	btc_event_proc_complete	= 0x03,
 	btc_event_rx_data		= 0x04,
+	btc_event_adv_found		= 0x05,
 } btc_event_id;
 
 struct btc_event_connect {
@@ -83,6 +84,12 @@ struct btc_event_rx_data {
 };
 typedef struct btc_event_rx_data btc_event_rx_data_t;
 
+struct btc_event_adv_found {
+	uint8_t addressType;
+	uint8_t address[BTC_ADDRESS_LEN];
+};
+typedef struct btc_event_adv_found btc_event_adv_found_t;
+
 struct btc_event {
 	btc_event_id id;
 	union {
@@ -90,6 +97,7 @@ struct btc_event {
 		btc_event_disconnect_t 		disconnect;
 		btc_event_proc_complete_t 	proc_complete;
 		btc_event_rx_data_t 		rx_data;
+		btc_event_adv_found_t		adv_found;
 	};
 };
 typedef struct btc_event btc_event_t;
