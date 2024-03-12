@@ -16,13 +16,13 @@
 #define NUM_APP_GATT_ATTRIBUTES_CONF 5 /* 5 attributes x BLE Serial Port service characteristics */
 
 #if PROFILE_ROLE == ROLE_COLLECTOR
-#define NUM_LINKS                               (CONFIG_NUM_MAX_LINKS)
+#define NUM_LINKS                               5//(CONFIG_NUM_MAX_LINKS)
 #else
 #define NUM_LINKS                               (1)
 #endif
    
-#define NUM_ADV_SETS_CONF                            (2U) 
-#define NUM_AUX_SCAN_SLOTS_CONF                      (2U)
+#define NUM_ADV_SETS_CONF                            (3U)
+#define NUM_AUX_SCAN_SLOTS_CONF                      (3U)
 #define NUM_SYNC_SLOTS_CONF                          (0U)
 #define WHITE_LIST_SIZE_LOG2_CONF                    (3U)
 #define L2CAP_MPS_CONF                               (247U)
@@ -38,7 +38,7 @@
 #define NUM_GATT_ATTRIBUTES     (NUM_APP_GATT_SERVICES_CONF + NUM_APP_GATT_ATTRIBUTES_CONF)
 
 /* Set supported max value for ATT_MTU enabled by the application */
-#define MAX_ATT_MTU_CONF             (247) 
+#define MAX_ATT_MTU_CONF             (67)
 
 /* Additional number of memory blocks  to be added to the minimum */
 #define OPT_MBLOCKS_CONF		(38)

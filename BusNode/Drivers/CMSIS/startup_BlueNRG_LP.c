@@ -22,6 +22,8 @@
 #include "rf_driver_ll_bus.h"
 #include "rf_driver_ll_system.h"
 
+#include "bluenrg_lp_evb_led.h"
+
 /* Private constants ---------------------------------------------------------*/
  
 
@@ -113,8 +115,9 @@ int __low_level_init(void)
     RAM_VR.WakeupFromSleepFlag = 1; /* A wakeup from DEEPSTOP occurred */
     CS_contextRestore();            /* Restore the context */
     /* if the context restore worked properly, we should never return here */
+    BSP_LED_On(BSP_LED3);
     while(1) { 
-      NVIC_SystemReset(); 
+      //NVIC_SystemReset();
     }
 #else
     return 0;

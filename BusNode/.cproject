@@ -75,7 +75,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="CONFIG_HW_SMPS_10uH"/>
                                     									
-                                    <listOptionValue builtIn="false" value="CONFIG_NUM_MAX_LINKS=5"/>
+                                    <listOptionValue builtIn="false" value="CONFIG_NUM_MAX_LINKS=4"/>
                                     									
                                     <listOptionValue builtIn="false" value="MAX_NUM_MASTERS=2"/>
                                     									
@@ -244,5 +244,7 @@
     <storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
     	
     <storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+    	
+    <storageModule moduleId="refreshScope"/>
     
 </cproject>

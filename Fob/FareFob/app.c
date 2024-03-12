@@ -68,6 +68,8 @@ SL_WEAK void app_init(void)
   // Put your additional application init code here!                         //
   // This is called once during start-up.                                    //
   /////////////////////////////////////////////////////////////////////////////
+  ///
+  app_log("HELLO\n\r");
 
   sl_led_init(&sl_led_led0);
   sl_led_turn_off(&sl_led_led0);

@@ -36,6 +36,8 @@ void btc_connect_rx_data(btc_connection_t* conn, uint8_t* data, uint16_t len);
 void btc_connect_cleanup(btc_connection_t* conn);
 void btc_connect_timeout_connect(void* data);
 void btc_connect_timeout_fare(void* data);
+uint8_t btc_connect_should_scan();
+void btc_connect_disconnect_scanning();
 
 void btc_adv_init();
 void btc_adv_start();

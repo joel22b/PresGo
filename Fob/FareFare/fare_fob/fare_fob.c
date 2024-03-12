@@ -24,9 +24,15 @@ uint8_t fare_uuid[UUID_LEN];
 
 
 void ff_init() {
+  app_log_info("Fare UUID: ");
   for (uint8_t i = 0; i < UUID_LEN; i++) {
+      if (i == 4 || i == 6 || i == 8 || i == 10) {
+          app_log("-");
+      }
+      app_log("%02X", FARE_DEFAULT_UUID[i]);
       fare_uuid[i] = FARE_DEFAULT_UUID[i];
   }
+  app_log("\n");
 
 #ifndef DEBUG_NO_RECENT_BUS
   rb_init();
@@ -119,6 +125,10 @@ void ff_msg_req(uint8_t connection, pt_msg_t* msg) {
       if (ret_val != SL_STATUS_OK) {
           app_log_info("Failed to send fare id message to connection %d: %lu\n\r", connection, ret_val);
       }
+
+//#ifndef DEBUG_NO_RECENT_BUS
+//      rb_add_bus_to_list(btc_connect_get_address(connection));
+//#endif
       break;
 
     case pt_req_done:

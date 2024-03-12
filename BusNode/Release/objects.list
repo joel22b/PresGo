@@ -74,8 +74,6 @@
 "src/distance_sensor/platform/vl53l1_platform.o"
 "src/gatt_db.o"
 "src/main.o"
-"src/procedures.o"
-"src/profile_client_server.o"
 "src/protocol_serial/protocol_serial.o"
 "src/protocol_serial/protocol_serial_send.o"
 "src/protocol_serial/protocol_serial_utils.o"

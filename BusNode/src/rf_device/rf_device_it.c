@@ -118,24 +118,24 @@ void DMA_IRQHandler(void)
 
 void GPIOA_IRQHandler(void)
 {  
-  extern uint8_t button1_pressed;
+  /*extern uint8_t button1_pressed;
   
   if(BSP_PB_GetITPendingBit(BSP_PUSH1) == SET) 
   {
     BSP_PB_ClearITPendingBit(BSP_PUSH1);
     button1_pressed = TRUE;
-  }  
+  }  */
 }
 
 void GPIOB_IRQHandler(void)
 {  
-  extern uint8_t button2_pressed;
+  /*extern uint8_t button2_pressed;
   
   if(BSP_PB_GetITPendingBit(BSP_PUSH2) == SET) 
   {
     BSP_PB_ClearITPendingBit(BSP_PUSH2);
     button2_pressed = TRUE;
-  }  
+  }  */
 }
 
 void BLE_WKUP_IRQHandler(void)
@@ -207,7 +207,22 @@ void I2Cx_IRQHandler(void)
   HAL_I2C_EV_IRQHandler(ds_get_i2c_handle());
 
   HAL_I2C_ER_IRQHandler(ds_get_i2c_handle());
-
 }
+
+/*void I2C1_IRQHandler(void)
+{
+	printf("I2C1\n\r");
+	HAL_I2C_EV_IRQHandler(ds_get_i2c_handle());
+
+	HAL_I2C_ER_IRQHandler(ds_get_i2c_handle());
+}
+
+void I2C2_IRQHandler(void)
+{
+	printf("I2C2\n\r");
+	HAL_I2C_EV_IRQHandler(ds_get_i2c_handle());
+
+	HAL_I2C_ER_IRQHandler(ds_get_i2c_handle());
+}*/
 
 /******************* (C) COPYRIGHT 2015 STMicroelectronics *****END OF FILE****/

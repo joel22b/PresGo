@@ -27,7 +27,7 @@
  ******************************************************************************/
 void app_init(void)
 {
-  app_log_info("Initialization started\n\r");
+  app_log_info("Initialization started\n");
   sm_init();
   ff_init();
 

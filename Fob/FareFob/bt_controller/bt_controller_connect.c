@@ -150,6 +150,7 @@ sl_status_t btc_connect_tx_data(uint8_t connection, uint8array* data) {
 }
 
 void btc_connect_rx_data(sl_bt_evt_gatt_server_user_write_request_t* evt_write_request) {
+  app_log_info("Received data\n\r");
   btc_connect_handle_t* handle = btc_get_connect_handle(evt_write_request->connection);
   if (handle->rx == 0x0000) {
       handle->rx = evt_write_request->characteristic;

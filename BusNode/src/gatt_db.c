@@ -4,8 +4,6 @@
 #include "ble_const.h" 
 #include "bluenrg_lp_stack.h"
 #include "osal.h"
-#include "app_state.h"
-#include "profile.h"
 #include "gatt_db.h"
 #include "MultipleConnections_config.h"
 
@@ -32,10 +30,6 @@ D973F2E2-B19E-11E2-9E96-0800200C9A66
 
 #define RX_CHR_UUID			0xe5, 0x2d, 0x86, 0xc8, 0x4b, 0x50, 0x2c, 0xa1, 0x9d, 0x4a, 0x16, 0x8c, 0xb5, 0x1c, 0xb5, 0x5a
 #define TX_CHR_UUID			0xc1, 0x86, 0x2a, 0xa9, 0xf7, 0xf5, 0x30, 0xa8, 0x49, 0x47, 0x0c, 0xed, 0xec, 0x90, 0x71, 0x06
-
-const uint8_t SerialPort_service_uuid[16] = {SRVC_UUID};
-const uint8_t SerialPort_TX_char_uuid[16] = {TX_CHR_UUID};
-const uint8_t SerialPort_RX_char_uuid[16] = {RX_CHR_UUID};
 
 BLE_GATT_SRV_CCCD_DECLARE(tx, NUM_LINKS, BLE_GATT_SRV_PERM_ENCRY_WRITE,
                      BLE_GATT_SRV_OP_MODIFIED_EVT_ENABLE_FLAG);
@@ -71,8 +65,6 @@ static const ble_gatt_srv_def_t serial_service = {
    },
 };
 
-uint16_t TXCharHandle, RXCharHandle;
-
 
 /*******************************************************************************
 * Function Name  : Add_SerialPort_Service
@@ -90,8 +82,6 @@ uint8_t Add_SerialPort_Service(void)
   {
     goto fail;
   }
-  TXCharHandle = aci_gatt_srv_get_char_decl_handle((ble_gatt_chr_def_t *)&serial_chars[0]);
-  RXCharHandle = aci_gatt_srv_get_char_decl_handle((ble_gatt_chr_def_t *)&serial_chars[1]);
   
   //printf("Serial Port Service added: TX Char Handle %04X, RX Char Handle %04X\n\r",
   //       TXCharHandle, RXCharHandle);
@@ -99,6 +89,6 @@ uint8_t Add_SerialPort_Service(void)
   return BLE_STATUS_SUCCESS; 
 
 fail:
-  printf("Error while adding Serial Port service.\n\r");
+  //printf("Error while adding Serial Port service.\n\r");
   return BLE_STATUS_ERROR ;
 }

@@ -11,6 +11,7 @@
 #include "rf_driver_hal.h"
 
 void ds_init();
+HAL_StatusTypeDef ds_setup_hi2c(I2C_HandleTypeDef* hi2c);
 uint8_t ds_is_init();
 I2C_HandleTypeDef* ds_get_i2c_handle();
 
