@@ -58,6 +58,7 @@ class ProtocolSerial:
         if self.debug:
             print("["+str(msg)+"]")
         self.outFile.write("["+str(msg)+"]\n")
+        self.outFile.flush()
         self.serialPort.write(msg.__str__().encode())
 
     def decode_message(self, raw: str):
@@ -91,6 +92,7 @@ class ProtocolSerial:
             elif psm.MsgType.Init.name == msgTypeStr:
                 flags = int(raw[10:12], 16)
                 self.outFile.write(init_str(flags))
+                self.outFile.flush()
                 self.callbackAnnouncementInit(flags)
             elif psm.MsgType.Disc.name == msgTypeStr:
                 self.callbackAnnouncementDisconnect(raw[10:22])
