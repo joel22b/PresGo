@@ -13,7 +13,7 @@ import fare_system
 STM_BLUETOOTH_AND_DISTANCE_PORT = '/dev/ttyACM1' # outermost (triggered first upon entry)
 STM_DISTANCE_ONLY_PORT = '/dev/ttyACM2'          # innermost distance sensor (triggered first upon exit)
 PAY_ZONE_X_MAX = 3
-PAY_ZONE_Y_MAX = 3
+PAY_ZONE_Y_MAX = 5
 PAY_ZONE_Z_MAX = 50                              # don't care about this dimension if it's facing upwards
 LOCKOUT_VALIDATION_ATTEMPT_S = 10                # only attempt a validation again after x seconds for a particular fare fob
 LOCKOUT_NO_FOB_STATE_S = 0.4                     # only trigger no fare fob state (passing distance sensor with no fob) every x seconds
@@ -44,7 +44,7 @@ class FobProcessing:
       #print("Initiating connection with:", fob_id)
       #self.print_connect_lists()
       return
-    # print('fob_id:',fob_id, 'x', x, "y", y, self.is_point_inside_pay_zone(x, y, z))
+    #print('fob_id:',fob_id, 'x', x, "y", y, self.is_point_inside_pay_zone(x, y, z))
     in_pay_zone = self.is_point_inside_pay_zone(x, y, z)
     with self.lock:
       for fob in self.pay_zone_queue:
@@ -67,17 +67,18 @@ class FobProcessing:
       with self.lock:
         self.last_no_fob_time = datetime.now()
         return
+    same_fob_too_quick = False
     with self.lock:
       (id, time_last_seen) = self.pay_zone_queue.pop()
-      if id in self.validating or \
-        id in self.last_validation_attempt and \
-        (datetime.now() - self.last_validation_attempt[id]).total_seconds() < LOCKOUT_VALIDATION_ATTEMPT_S:
-          print(id in self.validating)
-          print(id in self.last_validation_attempt and (datetime.now() - self.last_validation_attempt[id]).total_seconds() < LOCKOUT_VALIDATION_ATTEMPT_S)
-          print((datetime.now() - time_last_seen).total_seconds() > STALE_LOCATION_DATA_THRESHOLD_S)
-          print('returning early')
-          return
-      self.validating.append(id)
+      if id in self.validating:
+        return
+      same_fob_too_quick = id in self.last_validation_attempt and \
+        (datetime.now() - self.last_validation_attempt[id]).total_seconds() < LOCKOUT_VALIDATION_ATTEMPT_S
+      if not same_fob_too_quick:
+        self.validating.append(id)
+    if same_fob_too_quick:
+      self.gui.enqueue_state(tkinter_gui.State.SUCCESS, "Fare has already been paid.")
+      return
     self.gui.enqueue_state(tkinter_gui.State.VALIDATING)      
     self.pt_serial.send_request_fare(id, lambda uuid: self.on_fare_response(id, uuid))
 
@@ -85,7 +86,6 @@ class FobProcessing:
     with self.lock:
       self.last_validation_attempt[address] = datetime.now()
     print("Fare Response - Fare ID: " + str(uuid) + " Address: " + address)
-    (valid, balance) = self.fare_sys.validate_fare(uuid)
     if uuid == UUID(int=0):
       if address == "4C5BB3CA9C43":
         uuid = UUID(int=1)
@@ -95,6 +95,7 @@ class FobProcessing:
         uuid = UUID(int=3)
       elif address == "4C5BB3C9F98C":
         uuid = UUID(int=4)
+    (valid, balance) = self.fare_sys.validate_fare(uuid)
     text = f"Remaining Balance: {'' if balance >= 0 else '-'}${str(abs(balance))}."
     state = tkinter_gui.State.SUCCESS if valid else tkinter_gui.State.FAILURE
     if balance == self.fare_sys.fareError:
@@ -166,6 +167,7 @@ class FobProcessing:
     self.on_reset()
 
   def initiate_reset(self):
+    self.fare_sys.__init__()
     self.pt_serial.send_announcement_kill()
     self.pt_serial_distance.send_announcement_kill()
 

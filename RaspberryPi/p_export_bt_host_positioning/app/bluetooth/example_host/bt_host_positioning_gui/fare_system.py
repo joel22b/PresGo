@@ -20,7 +20,7 @@ class FareSystem:
         if fareUuid == invalid_fare:
             return (False, self.fareError)
         if fareUuid in self.db:
-            if self.db[fareUuid] > 0:
+            if self.db[fareUuid] >= self.farePrice:
                 self.db[fareUuid] -= self.farePrice
                 return (True, self.db[fareUuid])
             else:

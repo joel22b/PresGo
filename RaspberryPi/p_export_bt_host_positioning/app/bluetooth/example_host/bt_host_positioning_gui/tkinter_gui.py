@@ -8,11 +8,14 @@ import time
 import tkinter
 
 WINDOW_TITLE = 'PresGo GUI'
-WINDOW_WIDTH_PX = 800
-WINDOW_HEIGHT_PX = 455
+# WINDOW_WIDTH_PX = 800
+# WINDOW_HEIGHT_PX = 455
+WINDOW_WIDTH_PX = 1920
+WINDOW_HEIGHT_PX = 1053
 WINDOW_PADDING_PX = 12
 FONT = 'Arial'
-FONT_SIZE = 18
+# FONT_SIZE = 18
+FONT_SIZE = 36
 FONT_WEIGHT = 'bold'
 PERSON_COUNTER_TEXT_TEMPLATE = 'Bus Occupancy: '
 STATUS_TEXT_TEMPLATE = 'System Status: '
@@ -76,6 +79,14 @@ class TkinterGUI:
     with self.lock:
       self.state_queue.append(StateWithMessage(state=state, message=state.value.default_message + display_text))
 
+  def sound_good(self):
+    state = State.SUCCESS
+    os.system(f"aplay -D plughw:2,0 Sounds/{'success' if state == State.SUCCESS else 'failure'}.wav")
+
+  def sound_fail(self):
+    state = State.FAILURE
+    os.system(f"aplay -D plughw:2,0 Sounds/{'success' if state == State.SUCCESS else 'failure'}.wav")
+
   def process_state_queue(self):
     try:
       while self.running:
@@ -108,7 +119,13 @@ class TkinterGUI:
           self.canvas.itemconfig(self.main_text, text=display_text)
           # add waiting state to the queue for after failure or success state, to be shown after TIME_IN_SUCCESS_OR_FAILURE_STATE_S seconds
           if state == State.SUCCESS or state == State.FAILURE:
-            #os.system(f"aplay Sounds/{'success' if state == State.SUCCESS else 'failure'}.wav")
+            if state == State.SUCCESS:
+              thread_sound = threading.Thread(target=self.sound_good, daemon=True, args=())
+              thread_sound.start()
+            else:
+              thread_sound = threading.Thread(target=self.sound_fail, daemon=True, args=())
+              thread_sound.start()
+            #os.system(f"aplay -D plughw:2,0 Sounds/{'success' if state == State.SUCCESS else 'failure'}.wav")
             self.state_queue.append(StateWithMessage(state=State.WAITING, message=State.WAITING.value.default_message))
           elif state == State.VALIDATING:
             self.validation_start_time = datetime.now()
