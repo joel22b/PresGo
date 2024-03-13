@@ -12,10 +12,10 @@ import fare_system
 
 STM_BLUETOOTH_AND_DISTANCE_PORT = '/dev/ttyACM1' # outermost (triggered first upon entry)
 STM_DISTANCE_ONLY_PORT = '/dev/ttyACM2'          # innermost distance sensor (triggered first upon exit)
-PAY_ZONE_X_MAX = 2
-PAY_ZONE_Y_MAX = 2
+PAY_ZONE_X_MAX = 3
+PAY_ZONE_Y_MAX = 3
 PAY_ZONE_Z_MAX = 50                              # don't care about this dimension if it's facing upwards
-LOCKOUT_VALIDATION_ATTEMPT_S = 15                # only attempt a validation again after x seconds for a particular fare fob
+LOCKOUT_VALIDATION_ATTEMPT_S = 10                # only attempt a validation again after x seconds for a particular fare fob
 LOCKOUT_NO_FOB_STATE_S = 0.4                     # only trigger no fare fob state (passing distance sensor with no fob) every x seconds
 LOCKOUT_PERSON_COUNTER_UPDATE_S = 0.75           # don't update the person counter again until x seconds have elapsed
 STALE_LOCATION_DATA_THRESHOLD_S = 1.5            # ignore saved position measurements from a fob if they are older than x seconds
@@ -44,7 +44,7 @@ class FobProcessing:
       #print("Initiating connection with:", fob_id)
       #self.print_connect_lists()
       return
-    #print('x', x, "y", y, self.is_point_inside_pay_zone(x, y, z))
+    # print('fob_id:',fob_id, 'x', x, "y", y, self.is_point_inside_pay_zone(x, y, z))
     in_pay_zone = self.is_point_inside_pay_zone(x, y, z)
     with self.lock:
       for fob in self.pay_zone_queue:
@@ -58,8 +58,10 @@ class FobProcessing:
   def process_pay_zone_queue_entry(self):
     no_fob_found = False
     with self.lock:
+      # print(len(self.pay_zone_queue))
       if len(self.pay_zone_queue) == 0:
         no_fob_found = not self.last_no_fob_time or (datetime.now() - self.last_no_fob_time).total_seconds() > LOCKOUT_NO_FOB_STATE_S
+        # print(no_fob_found)
     if no_fob_found:
       self.gui.enqueue_state(tkinter_gui.State.FAILURE, 'Valid Fare Fob not found.')
       with self.lock:
@@ -69,8 +71,11 @@ class FobProcessing:
       (id, time_last_seen) = self.pay_zone_queue.pop()
       if id in self.validating or \
         id in self.last_validation_attempt and \
-        (datetime.now() - self.last_validation_attempt[id]).total_seconds() < LOCKOUT_VALIDATION_ATTEMPT_S or \
-        (datetime.now() - time_last_seen).total_seconds() > STALE_LOCATION_DATA_THRESHOLD_S:
+        (datetime.now() - self.last_validation_attempt[id]).total_seconds() < LOCKOUT_VALIDATION_ATTEMPT_S:
+          print(id in self.validating)
+          print(id in self.last_validation_attempt and (datetime.now() - self.last_validation_attempt[id]).total_seconds() < LOCKOUT_VALIDATION_ATTEMPT_S)
+          print((datetime.now() - time_last_seen).total_seconds() > STALE_LOCATION_DATA_THRESHOLD_S)
+          print('returning early')
           return
       self.validating.append(id)
     self.gui.enqueue_state(tkinter_gui.State.VALIDATING)      
@@ -81,6 +86,15 @@ class FobProcessing:
       self.last_validation_attempt[address] = datetime.now()
     print("Fare Response - Fare ID: " + str(uuid) + " Address: " + address)
     (valid, balance) = self.fare_sys.validate_fare(uuid)
+    if uuid == UUID(int=0):
+      if address == "4C5BB3CA9C43":
+        uuid = UUID(int=1)
+      elif address == "4C5BB3CA9C47":
+        uuid = UUID(int=2)
+      elif address == "4C5BB3CA9C49":
+        uuid = UUID(int=3)
+      elif address == "4C5BB3C9F98C":
+        uuid = UUID(int=4)
     text = f"Remaining Balance: {'' if balance >= 0 else '-'}${str(abs(balance))}."
     state = tkinter_gui.State.SUCCESS if valid else tkinter_gui.State.FAILURE
     if balance == self.fare_sys.fareError:
@@ -99,9 +113,10 @@ class FobProcessing:
     if inDoorway:
       return
     with self.lock:
-      person_exiting_bus = self.someone_in_doorway_back and \
+      person_entering_bus = self.someone_in_doorway_back and \
         (self.last_person_counter_update_time is None or (datetime.now() - self.last_person_counter_update_time).total_seconds() > LOCKOUT_PERSON_COUNTER_UPDATE_S)
-    if person_exiting_bus:
+    if person_entering_bus:
+      print('person entering bus')
       self.process_pay_zone_queue_entry()
       self.gui.increment_person_counter()
       with self.lock:
@@ -114,9 +129,10 @@ class FobProcessing:
     if inDoorway:
       return
     with self.lock:
-      person_entering_bus = self.someone_in_doorway_front and \
+      person_exiting_bus = self.someone_in_doorway_front and \
         (self.last_person_counter_update_time is None or(datetime.now() - self.last_person_counter_update_time).total_seconds() > LOCKOUT_PERSON_COUNTER_UPDATE_S)
-    if person_entering_bus:
+    if person_exiting_bus:
+      print('person exiting bus')
       self.gui.decrement_person_counter()
       with self.lock:
         self.last_person_counter_update_time = datetime.now()
