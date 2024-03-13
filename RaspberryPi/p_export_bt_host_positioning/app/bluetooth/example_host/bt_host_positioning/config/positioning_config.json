@@ -13,7 +13,7 @@
          "id":"ble-pd-0C4314F46B21",
          "config":{
             "version":1,
-            "aoxMode":"SL_RTL_AOA_MODE_REAL_TIME_FAST_RESPONSE",
+            "aoxMode":"SL_RTL_AOA_MODE_SINGLE_SHOT_HIGH_ACCURACY",
             "antennaMode":"SL_RTL_AOX_ARRAY_TYPE_4x4_DP_URA",
             "antennaArray":[
                0,

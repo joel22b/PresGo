@@ -12,10 +12,10 @@ import fare_system
 
 STM_BLUETOOTH_AND_DISTANCE_PORT = '/dev/ttyACM1' # outermost (triggered first upon entry)
 STM_DISTANCE_ONLY_PORT = '/dev/ttyACM2'          # innermost distance sensor (triggered first upon exit)
-PAY_ZONE_X_MAX = 3
-PAY_ZONE_Y_MAX = 5
+PAY_ZONE_X_MAX = 4
+PAY_ZONE_Y_MAX = 6
 PAY_ZONE_Z_MAX = 50                              # don't care about this dimension if it's facing upwards
-LOCKOUT_VALIDATION_ATTEMPT_S = 10                # only attempt a validation again after x seconds for a particular fare fob
+LOCKOUT_VALIDATION_ATTEMPT_S = 2                # only attempt a validation again after x seconds for a particular fare fob
 LOCKOUT_NO_FOB_STATE_S = 0.4                     # only trigger no fare fob state (passing distance sensor with no fob) every x seconds
 LOCKOUT_PERSON_COUNTER_UPDATE_S = 0.75           # don't update the person counter again until x seconds have elapsed
 STALE_LOCATION_DATA_THRESHOLD_S = 1.5            # ignore saved position measurements from a fob if they are older than x seconds
