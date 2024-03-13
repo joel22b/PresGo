@@ -6,6 +6,8 @@
 
 #include "config.h"
 
+#include "bluenrg_lp_evb_led.h"
+
 static const uint8_t btc_adv_handle = 0x00;
 static uint8_t* btc_adv_data;
 static uint16_t btc_adv_data_len = 0;
@@ -127,10 +129,17 @@ void btc_adv_callback(uint8_t Num_Reports, Advertising_Report_t Advertising_Repo
 	//printf("Adv cb\n\r");
 	for (uint8_t i = 0; i < Num_Reports; i++) {
 		if (btc_adv_match(Advertising_Report[i].Address)) {
+			//printf("Adv ");
+			//BSP_COM_PrintCb();
 			//printf("Good Adv found!\n\r");
 			// Device found!
 			//btc_adv_scan_stop();
-			btc_connect_start(Advertising_Report[i].Address_Type, Advertising_Report[i].Address);
+			btc_event_t event;
+			event.id = btc_event_adv_found;
+			event.adv_found.addressType = Advertising_Report[i].Address_Type;
+			memcpy(event.adv_found.address, Advertising_Report[i].Address, BTC_ADDRESS_LEN);
+			btc_event_add(&event);
+			//btc_connect_start(Advertising_Report[i].Address_Type, Advertising_Report[i].Address);
 			return;
 		}
 	}
